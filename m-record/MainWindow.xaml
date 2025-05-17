@@ -10,6 +10,7 @@
         WindowStartupLocation="CenterScreen"
         Background="Transparent"
         AllowsTransparency="True"
+        Icon="appicon.ico"
         >
     <Window.Resources>
         <Style x:Key="CloseIconDarkModeStyle" TargetType="iconPacks:PackIconMaterial">
@@ -161,9 +162,7 @@
                             Width="40" Height="40" 
                             Background="Transparent" 
                             BorderThickness="0"
-                            Click="PlayStopButton_Click"
-                            MouseEnter="PlayStopButton_MouseEnter"
-                            MouseLeave="PlayStopButton_MouseLeave">
+                            Click="PlayStopButton_Click">
                         <iconPacks:PackIconMaterial x:Name="PlayStopIcon"
                                 Kind="RecordCircleOutline"
                                 Width="38" Height="38"
