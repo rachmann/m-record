@@ -29,6 +29,8 @@ namespace m_record
         public MainWindow()
         {
             InitializeComponent();
+            isDarkMode = Properties.Settings.Default.IsDarkMode;
+            ApplyTheme();
             UpdateRecordingState();
 
             // Set up timer
@@ -197,6 +199,8 @@ namespace m_record
             if (dlg.ShowDialog() == true)
             {
                 isDarkMode = dlg.IsDarkMode;
+                Properties.Settings.Default.IsDarkMode = isDarkMode;
+                Properties.Settings.Default.Save();
                 ApplyTheme();
             }
         }
