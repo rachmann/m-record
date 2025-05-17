@@ -1,0 +1,179 @@
+﻿<Window x:Class="m_record.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+        Title="m-record"
+        Width="160" Height="200"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        ShowInTaskbar="True"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        AllowsTransparency="True"
+        >
+    <Window.Resources>
+        <Style x:Key="CloseIconDarkModeStyle" TargetType="iconPacks:PackIconMaterial">
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=CloseButton}" Value="True">
+                    <Setter Property="Foreground" Value="Orange"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="MenuIconDarkModeStyle" TargetType="iconPacks:PackIconMaterial">
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=ContextMenuButton}" Value="True">
+                    <Setter Property="Foreground" Value="Orange"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DarkModeButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="Foreground" Value="LightGray"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                              BorderBrush="{TemplateBinding BorderBrush}" 
+                              BorderThickness="{TemplateBinding BorderThickness}" 
+                              CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#222"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#444"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DarkModeMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#222"/>
+                    <Setter Property="Foreground" Value="Orange"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DarkModeTopButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                        BorderBrush="{TemplateBinding BorderBrush}" 
+                        BorderThickness="{TemplateBinding BorderThickness}" 
+                        CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="Black"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DarkModePlayStopButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="Gray"/>
+            <Setter Property="Foreground" Value="LightGray"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="Orange"/>
+                    <Setter Property="Background" Value="Black"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Border BorderBrush="#888" BorderThickness="1" CornerRadius="8" Background="White">
+        <Grid>
+            <!-- Top bar with context menu and close button -->
+            <Grid Height="32" VerticalAlignment="Top">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="32"/>
+                </Grid.ColumnDefinitions>
+                <!-- Context menu icon -->
+                <Button Grid.Column="0" Name="ContextMenuButton" Padding="0" Margin="0"
+                    Width="16" Height="16" BorderThickness="0"
+                    HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <iconPacks:PackIconMaterial x:Name="MenuIcon"
+                                Kind="Menu"
+                                Width="14" Height="14" />
+
+                    <Button.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Settings" Click="SettingsMenuItem_Click"/>
+                            <MenuItem Header="Help" Click="HelpMenuItem_Click"/>
+                            <MenuItem Header="About" Click="AboutMenuItem_Click"/>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <Button Grid.Column="2" Name="CloseButton" Padding="0" Margin="0"
+                    Width="16" Height="16" BorderThickness="0"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Click="CloseButton_Click">
+                    <iconPacks:PackIconMaterial x:Name="CloseIcon"
+                                Kind="Close"
+                                Width="14" Height="14" />
+
+                </Button>
+            </Grid>
+
+            <!-- Main content -->
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
+                    <!-- Status Icon: Green or Red Circle -->
+                    <iconPacks:PackIconMaterial x:Name="StatusIcon" Kind="CheckboxBlankCircle" Width="40" Height="40" Margin="0,0,20,0" Foreground="Green"/>
+                    <!-- Play/Stop Button -->
+                    <Button Name="PlayStopButton" 
+                            Width="40" Height="40" 
+                            Background="Transparent" 
+                            BorderThickness="0"
+                            Click="PlayStopButton_Click"
+                            MouseEnter="PlayStopButton_MouseEnter"
+                            MouseLeave="PlayStopButton_MouseLeave">
+                        <iconPacks:PackIconMaterial x:Name="PlayStopIcon"
+                                Kind="RecordCircleOutline"
+                                Width="38" Height="38"
+                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                    </Button>
+                </StackPanel>
+                <!-- Timer -->
+                <TextBlock Name="TimerText" Text="00:00:00" FontSize="20" FontWeight="Bold"
+                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
