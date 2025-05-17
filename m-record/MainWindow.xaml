@@ -156,18 +156,29 @@
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40,0,0">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
                     <!-- Status Icon: Green or Red Circle -->
-                    <iconPacks:PackIconMaterial x:Name="StatusIcon" Kind="CheckboxBlankCircle" Width="40" Height="40" Margin="0,0,20,0" Foreground="Green"/>
+                    <Button x:Name="StatusIconButton"
+                        Width="40" Height="40"
+                        Background="Transparent"
+                        BorderThickness="0"
+                              Margin="0,0,5,0" 
+                        Click="StatusIconButton_Click">
+                        <iconPacks:PackIconMaterial x:Name="StatusIcon"
+                                Kind="CheckboxBlankCircle"
+                                Width="38" Height="38"
+                                Margin="0,0,0,0"
+                                Foreground="Green"/>
+                    </Button>
                     <!-- Play/Stop Button -->
-                    <Button Name="PlayStopButton" 
+                        <Button Name="PlayStopButton" 
                             Width="40" Height="40" 
                             Background="Transparent" 
                             BorderThickness="0"
                             Click="PlayStopButton_Click">
-                        <iconPacks:PackIconMaterial x:Name="PlayStopIcon"
+                            <iconPacks:PackIconMaterial x:Name="PlayStopIcon"
                                 Kind="RecordCircleOutline"
                                 Width="38" Height="38"
                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                    </Button>
+                        </Button>
                 </StackPanel>
                 <!-- Timer -->
                 <TextBlock Name="TimerText" Text="00:00:00" FontSize="20" FontWeight="Bold"

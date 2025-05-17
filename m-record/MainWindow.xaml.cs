@@ -124,7 +124,54 @@ namespace m_record
 
         }
 
+        // Helper to get the save directory, falling back to Desktop if not set
+        private string GetRecordPath()
+        {
+            var path = Properties.Settings.Default.RecordPath;
+            if (string.IsNullOrWhiteSpace(path))
+                path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            return path;
+        }
+
+
         #region Event Handlers
+
+        private void StatusIconButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!isRecording)
+                return;
+
+            // 1. Get timestamp in the same format as keylog
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
+            // 2. Capture the screen
+            var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
+            if (primaryScreen == null)
+            {
+                MessageBox.Show("No primary screen detected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var screenBounds = primaryScreen.Bounds;
+            using (var bmp = new System.Drawing.Bitmap(screenBounds.Width, screenBounds.Height))
+            {
+                using (var g = System.Drawing.Graphics.FromImage(bmp))
+                {
+                    g.CopyFromScreen(screenBounds.Location, System.Drawing.Point.Empty, screenBounds.Size);
+                }
+                // 3. Save the image
+                string fileName = $"m_r_{timestamp.Replace(":", "-").Replace(" ", "_")}.png";
+                string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
+                bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+
+                MessageBox.Show($"Screen capture saved to:\n{filePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+
+            // 4. Add to keylog
+            _keystrokeLog.Add(string.Format("{0},F,F,F,F,SCREENCAP", timestamp));
+        }
 
         private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
         {
@@ -176,12 +223,12 @@ namespace m_record
                 StopRecordingKeystrokes();
 
                 // Save keystroke log to CSV file
-                var filePath = System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                    $"keystrokes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                File.WriteAllLines(filePath, _keystrokeLog);
+                var logFilePath = System.IO.Path.Combine(
+                      GetRecordPath(),
+                      $"keystrokes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                File.WriteAllLines(logFilePath, _keystrokeLog);
 
-                MessageBox.Show($"Keystroke log saved to:\n{filePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"Keystroke log saved to:\n{logFilePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e)
