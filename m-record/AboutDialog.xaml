@@ -1,0 +1,19 @@
+﻿<Window x:Class="m_record.AboutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:m_record"
+        mc:Ignorable="d"
+        Title="About m_record" Height="280" Width="300"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None">
+    <StackPanel Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock Text="About m_record" FontWeight="Bold" FontSize="18" Margin="0,0,0,12" HorizontalAlignment="Center"/>
+        <TextBlock Text="Developer: Robert Achmann" Margin="0,0,0,8" HorizontalAlignment="Center"/>
+        <TextBlock Text="This application is a demo for the Mimica Development Team." TextWrapping="Wrap" Width="190" Height="60" HorizontalAlignment="Center" TextAlignment="Center"/>
+        <Button Content="OK" Width="80" Margin="0,16,0,0" Click="OkButton_Click" HorizontalAlignment="Center"/>
+    </StackPanel>
+</Window>

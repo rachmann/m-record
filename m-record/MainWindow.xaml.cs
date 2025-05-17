@@ -212,7 +212,8 @@ namespace m_record
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("About clicked.");
+            var dlg = new AboutDialog { Owner = this };
+            dlg.ShowDialog();
         }
 
         #endregion
