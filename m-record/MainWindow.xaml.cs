@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -9,6 +10,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Gma.System.MouseKeyHook;
 
 namespace m_record
 {
@@ -21,6 +23,8 @@ namespace m_record
         private DispatcherTimer timer;
         private int elapsedSeconds = 0;
         private bool isDarkMode = false;
+        private IKeyboardMouseEvents? _globalHook;
+        private List<string> _keystrokeLog = new();
 
         public MainWindow()
         {
@@ -33,7 +37,24 @@ namespace m_record
             timer.Tick += Timer_Tick;
         }
 
+        private void StartRecordingKeystrokes()
+        {
+            if (_globalHook == null)
+            {
+                _globalHook = Hook.GlobalEvents();
+                _globalHook.KeyDown += GlobalHook_KeyDown;
+            }
+        }
 
+        private void StopRecordingKeystrokes()
+        {
+            if (_globalHook != null)
+            {
+                _globalHook.KeyDown -= GlobalHook_KeyDown;
+                _globalHook.Dispose();
+                _globalHook = null;
+            }
+        }
         private void Timer_Tick(object? sender, EventArgs e)
         {
             elapsedSeconds++;
@@ -102,15 +123,35 @@ namespace m_record
         }
 
         #region Event Handlers
-        private void PlayStopButton_MouseEnter(object sender, MouseEventArgs e)
-        {
-            System.Diagnostics.Debug.WriteLine("Mouse entered PlayStopButton");
-             System.Diagnostics.Debug.WriteLine($"PlayStopIcon.Foreground: {PlayStopIcon.Foreground}");
-        }
 
-        private void PlayStopButton_MouseLeave(object sender, MouseEventArgs e)
+        private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine("Mouse left PlayStopButton");
+            // Add CSV header if this is the first entry
+            if (_keystrokeLog.Count == 0)
+            {
+                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,KeyCode");
+            }
+
+            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+
+            // Modifiers
+            bool isCtrl = e.Control;
+            bool isAlt = e.Alt;
+            bool isShift = e.Shift;
+            bool isWin =
+                (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.LWin) == System.Windows.Forms.Keys.LWin ||
+                (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.RWin) == System.Windows.Forms.Keys.RWin;
+
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5}",
+                timestamp,
+                isCtrl ? "T" : "F",
+                isAlt ? "T" : "F",
+                isShift ? "T" : "F",
+                isWin ? "T" : "F",
+                e.KeyCode);
+
+            _keystrokeLog.Add(csvRow);
+            // Optionally, write to file or update UI
         }
 
         private void PlayStopButton_Click(object sender, RoutedEventArgs e)
@@ -123,12 +164,22 @@ namespace m_record
                 elapsedSeconds = 0;
                 TimerText.Text = "00:00:00";
                 timer.Start();
+                StartRecordingKeystrokes();
             }
             else
             {
                 StatusIcon.Foreground = Brushes.Green;
                 PlayStopIcon.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.RecordCircleOutline;
                 timer.Stop();
+                StopRecordingKeystrokes();
+
+                // Save keystroke log to CSV file
+                var filePath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"keystrokes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
+                File.WriteAllLines(filePath, _keystrokeLog);
+
+                MessageBox.Show($"Keystroke log saved to:\n{filePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e)
