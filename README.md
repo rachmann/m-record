@@ -1,10 +1,12 @@
-Size of Keylog for 10 hours at an average of 80 WPM
 
 
-#m-record
-##Key Logger
+
+# m-record
+## Key Logger
 
 ### Memory Usage Calculation
+
+Size of Keylog for 10 hours at an average of 80 WPM
 
 **Assumptions:**
 - Typing speed: **80 words per minute (WPM)**
