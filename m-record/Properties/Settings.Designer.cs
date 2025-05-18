@@ -50,12 +50,12 @@ namespace m_record.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("2")]
-        public int NotifyMethod {
+        public int NotifyStyle {
             get {
-                return ((int)(this["NotifyMethod"]));
+                return ((int)(this["NotifyStyle"]));
             }
             set {
-                this["NotifyMethod"] = value;
+                this["NotifyStyle"] = value;
             }
         }
     }

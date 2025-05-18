@@ -25,6 +25,7 @@ namespace m_record
         private bool isDarkMode = false;
         private IKeyboardMouseEvents? _globalHook;
         private List<string> _keystrokeLog = new();
+        private DispatcherTimer _notificationTimer = new DispatcherTimer();
 
         public MainWindow()
         {
@@ -37,6 +38,9 @@ namespace m_record
             timer = new DispatcherTimer();
             timer.Interval = TimeSpan.FromSeconds(1);
             timer.Tick += Timer_Tick;
+
+            _notificationTimer.Interval = TimeSpan.FromSeconds(4);
+            _notificationTimer.Tick += NotificationTimer_Tick;
         }
 
         private void StartRecordingKeystrokes()
@@ -57,6 +61,13 @@ namespace m_record
                 _globalHook = null;
             }
         }
+
+        private void NotificationTimer_Tick(object? sender, EventArgs e)
+        {
+            NotificationArea.Visibility = Visibility.Collapsed;
+            _notificationTimer.Stop();
+        }
+
         private void Timer_Tick(object? sender, EventArgs e)
         {
             elapsedSeconds++;
@@ -135,13 +146,107 @@ namespace m_record
             return path;
         }
 
+        private MessageBoxResult ShowNotification(string message, string reason, MessageBoxImage messageType)
+        {
+            NotificationStyle notifySetting;
+
+            // Try to parse the setting, fallback to None if invalid
+            try
+            {
+                notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
+                // Defensive: check if value is defined in the enum
+                if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
+                    notifySetting = NotificationStyle.None;
+            }
+            catch
+            {
+                notifySetting = NotificationStyle.None;
+            }
+
+            if (notifySetting == NotificationStyle.None)
+                return MessageBoxResult.None;
+
+            if(messageType == MessageBoxImage.Question)
+            {
+                return MessageBox.Show(message, reason, MessageBoxButton.OKCancel, messageType);
+            }
+
+            if (notifySetting == NotificationStyle.MessageOnly || notifySetting == NotificationStyle.Both)
+            {
+                MessageBox.Show(message, reason, MessageBoxButton.OK, messageType);
+            }
+
+            if (notifySetting == NotificationStyle.NotificationArea || notifySetting == NotificationStyle.Both)
+            {
+                NotificationArea.Visibility = Visibility.Visible;
+                var prefix =
+                    messageType == MessageBoxImage.Error  
+                        ? "Error: "
+                        : messageType == MessageBoxImage.Information
+                            ? "Info: "
+                            : messageType == MessageBoxImage.Warning
+                                ? "Warning: "
+                                : messageType == MessageBoxImage.Exclamation
+                                    ? "Alert: "
+                                    : "";
+                NotificationArea.Text +=
+                 (string.IsNullOrEmpty(NotificationArea.Text) ? "" : "\n") + prefix + message;
+                NotificationArea.ScrollToEnd();
+                _notificationTimer.Stop();
+                _notificationTimer.Start();
+            }
+
+            return MessageBoxResult.None;
+        }
 
         #region Event Handlers
+
+        private void NotificationArea_MouseEnter(object sender, MouseEventArgs e)
+        {
+            _notificationTimer.Stop();
+        }
+
+        private void NotificationArea_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (NotificationArea.Visibility == Visibility.Visible && !NotificationArea.IsFocused)
+            {
+                _notificationTimer.Stop();
+                _notificationTimer.Start();
+            }
+        }
+
+        private void NotificationArea_GotFocus(object sender, RoutedEventArgs e)
+        {
+            _notificationTimer.Stop();
+        }
+
+        private void NotificationArea_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (NotificationArea.Visibility == Visibility.Visible && !NotificationArea.IsMouseOver)
+            {
+                _notificationTimer.Stop();
+                _notificationTimer.Start();
+            }
+        }
 
         private void StatusIconButton_Click(object sender, RoutedEventArgs e)
         {
             if (!isRecording)
+            {
+                _notificationTimer.Stop();
+                if (NotificationArea.Visibility == Visibility.Visible)
+                {
+                    NotificationArea.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    NotificationArea.Visibility = Visibility.Visible;
+                    _notificationTimer.Start();
+                }
+                
                 return;
+            }
+               
 
             // 1. Get timestamp in the same format as keylog
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
@@ -150,7 +255,7 @@ namespace m_record
             var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
             if (primaryScreen == null)
             {
-                MessageBox.Show("No primary screen detected.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowNotification("No primary screen detected.", "Error", MessageBoxImage.Error);
                 return;
             }
 
@@ -166,7 +271,7 @@ namespace m_record
                 string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
                 bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
 
-                MessageBox.Show($"Screen capture saved to:\n{filePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowNotification($"Screen capture saved to: {filePath}", "Saved Screen Shot", MessageBoxImage.Information);
             }
 
             // 4. Add to keylog
@@ -228,7 +333,7 @@ namespace m_record
                       $"keystrokes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
                 File.WriteAllLines(logFilePath, _keystrokeLog);
 
-                MessageBox.Show($"Keystroke log saved to:\n{logFilePath}", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowNotification($"Keystroke log saved to: {logFilePath}", "Saved Keystroke Log", MessageBoxImage.Information);
             }
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e)
@@ -242,7 +347,12 @@ namespace m_record
         }
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            var dlg = new SettingsDialog(isDarkMode) { Owner = this };
+            var notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
+            // Defensive: check if value is defined in the enum
+            if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
+                notifySetting = NotificationStyle.None;
+
+            var dlg = new SettingsDialog(isDarkMode, notifySetting) { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 isDarkMode = dlg.IsDarkMode;
@@ -254,7 +364,8 @@ namespace m_record
 
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Help clicked.");
+            ShowNotification("Help clicked.", "Info", MessageBoxImage.Information);
+
         }
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
