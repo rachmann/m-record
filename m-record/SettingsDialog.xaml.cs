@@ -20,16 +20,19 @@ namespace m_record
     public partial class SettingsDialog : Window
     {
         public bool IsDarkMode { get; private set; }
+        public NotificationStyle SelectedNotificationStyle { get; private set; }
 
-        public SettingsDialog(bool currentDarkMode)
+        public SettingsDialog(bool currentDarkMode, NotificationStyle currentNotify)
         {
             InitializeComponent();
             DarkModeCheckBox.IsChecked = currentDarkMode;
+            NotifyComboBox.SelectedIndex = (int)currentNotify;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             IsDarkMode = DarkModeCheckBox.IsChecked == true;
+            SelectedNotificationStyle = (NotificationStyle)NotifyComboBox.SelectedIndex;
             DialogResult = true;
             Close();
         }
