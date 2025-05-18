@@ -1,7 +1,8 @@
 ﻿using Gma.System.MouseKeyHook;
+using m_record.Constants;
 using m_record.Enums;
 using m_record.Helpers;
-using m_record.Constants;
+using m_record.Services;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -9,15 +10,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using Path = System.IO.Path;
-using System.Windows.Forms;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs; // Add this at the top if not already present
+using Path = System.IO.Path;
 
 namespace m_record
 {
@@ -33,6 +34,7 @@ namespace m_record
         private IKeyboardMouseEvents? _globalHook;
         private List<string> _keystrokeLog = new();
         private DispatcherTimer _notificationTimer = new DispatcherTimer();
+        private readonly ScreenCaptureService _screenCaptureService = new();
         private string? _currentLogFilePath = null;
 
         public MainWindow()
@@ -159,7 +161,7 @@ namespace m_record
         private string GetCurrentLogFilePath()
         {
             var dir = GetRecordPath();
-            var fileName = $"   {DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
+            var fileName = $"mrecord_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
             var path = Path.Combine(dir, fileName);
 
             // If this is the first event of the session, and file doesn't exist, write header
@@ -168,7 +170,7 @@ namespace m_record
                 _currentLogFilePath = path;
                 if (!File.Exists(path))
                 {
-                    File.WriteAllText(path, "timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY" + Environment.NewLine);
+                    File.WriteAllText(path, "timestamp,Type,IsCtrl,IsAlt,IsShift,IsWin,KeyCode,Application,ApplicationPath,ParentWindow,Window,FilePath,MouseLocationX,MouseLocationY" + Environment.NewLine);
                 }
             }
             return path;
@@ -274,52 +276,43 @@ namespace m_record
 
                 return;
             }
-
+            var NowDate = DateTime.Now;
             // 1. Get timestamp in the same format as keylog
-            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
+            string timestamp = NowDate.ToString(Constants.Constants.TimestampFormat);
             // 2. Get the foreground application info
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
 
-            // 3. Capture all screens
-            var screens = Screen.AllScreens;
+            // 3. Use ScreenCaptureService to capture all screens
+            string directory = GetRecordPath();
+            string filePrefix = "screensave";
+            string fileSuffix = ".png";
+            var screens = System.Windows.Forms.Screen.AllScreens;
             if (screens == null || screens.Length == 0)
             {
                 ShowNotification("No screens detected.", "Error", MessageBoxImage.Error);
                 return;
             }
+            // Use the service to capture this screen
+            // This will save all screens, but we want to show notification and log for each
+            var screenFilePaths = _screenCaptureService.CaptureAllScreens(NowDate, directory, filePrefix, fileSuffix);
 
-            var logFilePath = GetCurrentLogFilePath();
             for (int i = 0; i < screens.Length; i++)
             {
-                var screen = screens[i];
-                var screenBounds = screen.Bounds;
-                using (var bmp = new System.Drawing.Bitmap(screenBounds.Width, screenBounds.Height))
-                {
-                    using (var g = System.Drawing.Graphics.FromImage(bmp))
-                    {
-                        g.CopyFromScreen(screenBounds.Location, System.Drawing.Point.Empty, screenBounds.Size);
-                    }
-                    // 4. Save the image with the new template
-                    string fileName = $"screensave_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}_{i + 1}.png";
-                    string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
-                    bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+                ShowNotification($"Screen capture saved", "Saved Screen Shot", MessageBoxImage.Information);
 
-                    ShowNotification($"Screen capture saved to: {filePath}", "Saved Screen Shot", MessageBoxImage.Information);
+                // Add to keylog for each screen
+                string logFilePath = GetCurrentLogFilePath();
+                string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
+                                      timestamp,
+                                      "SCREENCAP",
+                                      string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
+                                      processName, processfileName,
+                                      string.Empty,
+                                      $"Screen_{i + 1}", 
+                                      screenFilePaths[i],
+                                      string.Empty, string.Empty);
 
-                    // 5. Add to keylog for each screen
-                    string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
-                                          timestamp,
-                                          string.Empty,
-                                          string.Empty,
-                                          string.Empty,
-                                          string.Empty,
-                                          "SCREENCAP,",
-                                          $"Screen_{i + 1}",
-                                          processName, processfileName,
-                                          string.Empty, string.Empty, string.Empty, string.Empty);
-
-                    File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
-                }
+                File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
             }
         }
 
@@ -334,16 +327,13 @@ namespace m_record
 
             // 1. Get timestamp in the same format as keylog
             string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
                                   timestamp,
-                                  string.Empty,
-                                  string.Empty,
-                                  string.Empty,
-                                  string.Empty,
-                                  "MOUSECLICK,",
-                                  string.Empty,
+                                  "MOUSECLICK",
+                                  string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
                                   processName, processfileName,
-                                  parentWindowTitle, windowTitle, $"{e.X}", $"{e.Y}");
+                                  parentWindowTitle, windowTitle,
+                                  string.Empty, $"{e.X}", $"{e.Y}");
 
             var logFilePath = GetCurrentLogFilePath();
             File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
@@ -363,16 +353,16 @@ namespace m_record
                 (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.LWin) == System.Windows.Forms.Keys.LWin ||
                 (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.RWin) == System.Windows.Forms.Keys.RWin;
 
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
                                 timestamp,
+                                "KEYSTROKE",
                                 isCtrl ? "T" : "F",
                                 isAlt ? "T" : "F",
                                 isShift ? "T" : "F",
                                 isWin ? "T" : "F",
-                                "KEYSTROKE,",
                                 e.KeyCode,
                                 processName, processfileName,
-                                string.Empty, string.Empty, string.Empty, string.Empty);
+                                string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
 
             var logFilePath = GetCurrentLogFilePath();
             File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
@@ -410,6 +400,7 @@ namespace m_record
         {
             this.Close();
         }
+
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
         {
             var notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
