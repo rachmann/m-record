@@ -1,4 +1,5 @@
-﻿using System;
+﻿using m_record.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,17 +23,22 @@ namespace m_record
         public bool IsDarkMode { get; private set; }
         public NotificationStyle SelectedNotificationStyle { get; private set; }
 
-        public SettingsDialog(bool currentDarkMode, NotificationStyle currentNotify)
+        public string SelectedRecordingPath { get; set; }
+
+        public SettingsDialog(bool currentDarkMode, string recordingPath, NotificationStyle currentNotify)
         {
             InitializeComponent();
             DarkModeCheckBox.IsChecked = currentDarkMode;
             NotifyComboBox.SelectedIndex = (int)currentNotify;
+            RecordPathTextBox.Text = recordingPath;
+            SelectedRecordingPath = recordingPath;
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             IsDarkMode = DarkModeCheckBox.IsChecked == true;
             SelectedNotificationStyle = (NotificationStyle)NotifyComboBox.SelectedIndex;
+            SelectedRecordingPath = RecordPathTextBox.Text;
             DialogResult = true;
             Close();
         }

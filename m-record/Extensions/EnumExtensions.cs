@@ -8,7 +8,7 @@ using System;
 using System.ComponentModel;
 using System.Reflection;
 
-namespace m_record
+namespace m_record.Extensions
 {
     public static class EnumExtensions
     {

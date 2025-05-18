@@ -1,5 +1,10 @@
-﻿using System.Text;
+﻿using Gma.System.MouseKeyHook;
+using m_record.Enums;
+using m_record.Helpers;
+using m_record.Constants;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -10,7 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using Gma.System.MouseKeyHook;
+//using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace m_record
 {
@@ -49,6 +54,7 @@ namespace m_record
             {
                 _globalHook = Hook.GlobalEvents();
                 _globalHook.KeyDown += GlobalHook_KeyDown;
+                _globalHook.MouseDownExt += GlobalHook_MouseDownExt;
             }
         }
 
@@ -57,6 +63,7 @@ namespace m_record
             if (_globalHook != null)
             {
                 _globalHook.KeyDown -= GlobalHook_KeyDown;
+                _globalHook.MouseDownExt -= GlobalHook_MouseDownExt;
                 _globalHook.Dispose();
                 _globalHook = null;
             }
@@ -166,7 +173,7 @@ namespace m_record
             if (notifySetting == NotificationStyle.None)
                 return MessageBoxResult.None;
 
-            if(messageType == MessageBoxImage.Question)
+            if (messageType == MessageBoxImage.Question)
             {
                 return MessageBox.Show(message, reason, MessageBoxButton.OKCancel, messageType);
             }
@@ -180,7 +187,7 @@ namespace m_record
             {
                 NotificationArea.Visibility = Visibility.Visible;
                 var prefix =
-                    messageType == MessageBoxImage.Error  
+                    messageType == MessageBoxImage.Error
                         ? "Error: "
                         : messageType == MessageBoxImage.Information
                             ? "Info: "
@@ -243,15 +250,15 @@ namespace m_record
                     NotificationArea.Visibility = Visibility.Visible;
                     _notificationTimer.Start();
                 }
-                
+
                 return;
             }
-               
 
             // 1. Get timestamp in the same format as keylog
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
-
-            // 2. Capture the screen
+            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
+            // 2. Get the foreground application info
+            var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
+            // 3. Capture the screen
             var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
             if (primaryScreen == null)
             {
@@ -266,16 +273,57 @@ namespace m_record
                 {
                     g.CopyFromScreen(screenBounds.Location, System.Drawing.Point.Empty, screenBounds.Size);
                 }
-                // 3. Save the image
+                // 4. Save the image
                 string fileName = $"m_r_{timestamp.Replace(":", "-").Replace(" ", "_")}.png";
                 string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
                 bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
 
                 ShowNotification($"Screen capture saved to: {filePath}", "Saved Screen Shot", MessageBoxImage.Information);
             }
+            // 5. Add to keylog
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+                                  timestamp,
+                                  string.Empty,
+                                  string.Empty,
+                                  string.Empty,
+                                  string.Empty,
+                                  "SCREENCAP,",
+                                  string.Empty,
+                                  processName, processfileName,
+                                  string.Empty, string.Empty, string.Empty, string.Empty);
 
-            // 4. Add to keylog
-            _keystrokeLog.Add(string.Format("{0},F,F,F,F,SCREENCAP", timestamp));
+            _keystrokeLog.Add(csvRow);
+        }
+
+        private void GlobalHook_MouseDownExt(object? sender, MouseEventExtArgs e)
+        {
+            var point = new System.Drawing.Point(e.X, e.Y);
+
+            var windowTitle = MouseWindowHelper.GetWindowTitleAtPoint(point);
+            var parentWindowTitle = MouseWindowHelper.GetParentWindowTitleAtPoint(point);
+            var processName = MouseWindowHelper.GetProcessNameAtPoint(point);
+            var processfileName = MouseWindowHelper.GetProcessFileNameAtPoint(point);
+
+            // Add CSV header if this is the first entry
+            if (_keystrokeLog.Count == 0)
+            {
+                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY");
+            }
+
+            // 1. Get timestamp in the same format as keylog
+            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+                                  timestamp,
+                                  string.Empty,
+                                  string.Empty,
+                                  string.Empty,
+                                  string.Empty,
+                                  "MOUSECLICK,",
+                                  string.Empty,
+                                  processName, processfileName,
+                                  parentWindowTitle, windowTitle, $"{e.X}", $"{e.Y}");
+
+            _keystrokeLog.Add(csvRow);
         }
 
         private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
@@ -283,10 +331,12 @@ namespace m_record
             // Add CSV header if this is the first entry
             if (_keystrokeLog.Count == 0)
             {
-                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,KeyCode");
+                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY");
             }
 
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
+
+            var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
 
             // Modifiers
             bool isCtrl = e.Control;
@@ -296,13 +346,16 @@ namespace m_record
                 (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.LWin) == System.Windows.Forms.Keys.LWin ||
                 (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.RWin) == System.Windows.Forms.Keys.RWin;
 
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5}",
-                timestamp,
-                isCtrl ? "T" : "F",
-                isAlt ? "T" : "F",
-                isShift ? "T" : "F",
-                isWin ? "T" : "F",
-                e.KeyCode);
+            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+                                timestamp,
+                                isCtrl ? "T" : "F",
+                                isAlt ? "T" : "F",
+                                isShift ? "T" : "F",
+                                isWin ? "T" : "F",
+                                "KEYSTROKE,",
+                                e.KeyCode,
+                                processName, processfileName,
+                                string.Empty, string.Empty, string.Empty, string.Empty);
 
             _keystrokeLog.Add(csvRow);
             // Optionally, write to file or update UI
@@ -352,11 +405,35 @@ namespace m_record
             if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
                 notifySetting = NotificationStyle.None;
 
-            var dlg = new SettingsDialog(isDarkMode, notifySetting) { Owner = this };
+            var recordingPath = Properties.Settings.Default.RecordPath ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            if (string.IsNullOrWhiteSpace(recordingPath))
+            {
+                recordingPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                    "m_record"
+                );
+            }
+
+            if (!Directory.Exists(recordingPath))
+            {
+                try
+                {
+                    Directory.CreateDirectory(recordingPath);
+                }
+                catch (Exception ex)
+                {
+                    ShowNotification($"Failed to create directory: {ex.Message}", "Error", MessageBoxImage.Error);
+                    return;
+                }
+            }
+
+            var dlg = new SettingsDialog(isDarkMode, recordingPath, notifySetting) { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 isDarkMode = dlg.IsDarkMode;
                 Properties.Settings.Default.IsDarkMode = isDarkMode;
+                Properties.Settings.Default.NotifyStyle = (int)dlg.SelectedNotificationStyle;
+                Properties.Settings.Default.RecordPath = dlg.SelectedRecordingPath;
                 Properties.Settings.Default.Save();
                 ApplyTheme();
             }
@@ -364,8 +441,8 @@ namespace m_record
 
         private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            ShowNotification("Help clicked.", "Info", MessageBoxImage.Information);
-
+            var dlg = new HelpDialog { Owner = this };
+            dlg.ShowDialog();
         }
 
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
