@@ -16,7 +16,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Path = System.IO.Path;
-//using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Windows.Forms;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs; // Add this at the top if not already present
 
 namespace m_record
 {
@@ -158,7 +159,7 @@ namespace m_record
         private string GetCurrentLogFilePath()
         {
             var dir = GetRecordPath();
-            var fileName = $"keystrokes_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
+            var fileName = $"   {DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
             var path = Path.Combine(dir, fileName);
 
             // If this is the first event of the session, and file doesn't exist, write header
@@ -195,12 +196,12 @@ namespace m_record
 
             if (messageType == MessageBoxImage.Question)
             {
-                return MessageBox.Show(message, reason, MessageBoxButton.OKCancel, messageType);
+                return System.Windows.MessageBox.Show(message, reason, MessageBoxButton.OKCancel, messageType);
             }
 
             if (notifySetting == NotificationStyle.MessageOnly || notifySetting == NotificationStyle.Both)
             {
-                MessageBox.Show(message, reason, MessageBoxButton.OK, messageType);
+                System.Windows.MessageBox.Show(message, reason, MessageBoxButton.OK, messageType);
             }
 
             if (notifySetting == NotificationStyle.NotificationArea || notifySetting == NotificationStyle.Both)
@@ -228,7 +229,7 @@ namespace m_record
 
         #region Event Handlers
 
-        private void NotificationArea_MouseEnter(object sender, MouseEventArgs e)
+        private void NotificationArea_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
         {
             _notificationTimer.Stop();
         }
@@ -278,42 +279,48 @@ namespace m_record
             string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
             // 2. Get the foreground application info
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
-            // 3. Capture the screen
-            var primaryScreen = System.Windows.Forms.Screen.PrimaryScreen;
-            if (primaryScreen == null)
+
+            // 3. Capture all screens
+            var screens = Screen.AllScreens;
+            if (screens == null || screens.Length == 0)
             {
-                ShowNotification("No primary screen detected.", "Error", MessageBoxImage.Error);
+                ShowNotification("No screens detected.", "Error", MessageBoxImage.Error);
                 return;
             }
 
-            var screenBounds = primaryScreen.Bounds;
-            using (var bmp = new System.Drawing.Bitmap(screenBounds.Width, screenBounds.Height))
-            {
-                using (var g = System.Drawing.Graphics.FromImage(bmp))
-                {
-                    g.CopyFromScreen(screenBounds.Location, System.Drawing.Point.Empty, screenBounds.Size);
-                }
-                // 4. Save the image
-                string fileName = $"m_r_{timestamp.Replace(":", "-").Replace(" ", "_")}.png";
-                string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
-                bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
-
-                ShowNotification($"Screen capture saved to: {filePath}", "Saved Screen Shot", MessageBoxImage.Information);
-            }
-            // 5. Add to keylog
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
-                                  timestamp,
-                                  string.Empty,
-                                  string.Empty,
-                                  string.Empty,
-                                  string.Empty,
-                                  "SCREENCAP,",
-                                  string.Empty,
-                                  processName, processfileName,
-                                  string.Empty, string.Empty, string.Empty, string.Empty);
-
             var logFilePath = GetCurrentLogFilePath();
-            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
+            for (int i = 0; i < screens.Length; i++)
+            {
+                var screen = screens[i];
+                var screenBounds = screen.Bounds;
+                using (var bmp = new System.Drawing.Bitmap(screenBounds.Width, screenBounds.Height))
+                {
+                    using (var g = System.Drawing.Graphics.FromImage(bmp))
+                    {
+                        g.CopyFromScreen(screenBounds.Location, System.Drawing.Point.Empty, screenBounds.Size);
+                    }
+                    // 4. Save the image with the new template
+                    string fileName = $"screensave_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}_{i + 1}.png";
+                    string filePath = System.IO.Path.Combine(GetRecordPath(), fileName);
+                    bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+
+                    ShowNotification($"Screen capture saved to: {filePath}", "Saved Screen Shot", MessageBoxImage.Information);
+
+                    // 5. Add to keylog for each screen
+                    string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12}",
+                                          timestamp,
+                                          string.Empty,
+                                          string.Empty,
+                                          string.Empty,
+                                          string.Empty,
+                                          "SCREENCAP,",
+                                          $"Screen_{i + 1}",
+                                          processName, processfileName,
+                                          string.Empty, string.Empty, string.Empty, string.Empty);
+
+                    File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
+                }
+            }
         }
 
         private void GlobalHook_MouseDownExt(object? sender, MouseEventExtArgs e)
