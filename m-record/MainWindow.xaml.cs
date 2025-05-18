@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Path = System.IO.Path;
 //using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace m_record
@@ -31,6 +32,7 @@ namespace m_record
         private IKeyboardMouseEvents? _globalHook;
         private List<string> _keystrokeLog = new();
         private DispatcherTimer _notificationTimer = new DispatcherTimer();
+        private string? _currentLogFilePath = null;
 
         public MainWindow()
         {
@@ -150,6 +152,24 @@ namespace m_record
                 path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
+            return path;
+        }
+
+        private string GetCurrentLogFilePath()
+        {
+            var dir = GetRecordPath();
+            var fileName = $"keystrokes_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
+            var path = Path.Combine(dir, fileName);
+
+            // If this is the first event of the session, and file doesn't exist, write header
+            if (_currentLogFilePath != path)
+            {
+                _currentLogFilePath = path;
+                if (!File.Exists(path))
+                {
+                    File.WriteAllText(path, "timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY" + Environment.NewLine);
+                }
+            }
             return path;
         }
 
@@ -292,7 +312,8 @@ namespace m_record
                                   processName, processfileName,
                                   string.Empty, string.Empty, string.Empty, string.Empty);
 
-            _keystrokeLog.Add(csvRow);
+            var logFilePath = GetCurrentLogFilePath();
+            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
         }
 
         private void GlobalHook_MouseDownExt(object? sender, MouseEventExtArgs e)
@@ -303,12 +324,6 @@ namespace m_record
             var parentWindowTitle = MouseWindowHelper.GetParentWindowTitleAtPoint(point);
             var processName = MouseWindowHelper.GetProcessNameAtPoint(point);
             var processfileName = MouseWindowHelper.GetProcessFileNameAtPoint(point);
-
-            // Add CSV header if this is the first entry
-            if (_keystrokeLog.Count == 0)
-            {
-                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY");
-            }
 
             // 1. Get timestamp in the same format as keylog
             string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
@@ -323,17 +338,12 @@ namespace m_record
                                   processName, processfileName,
                                   parentWindowTitle, windowTitle, $"{e.X}", $"{e.Y}");
 
-            _keystrokeLog.Add(csvRow);
+            var logFilePath = GetCurrentLogFilePath();
+            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
         }
 
         private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
         {
-            // Add CSV header if this is the first entry
-            if (_keystrokeLog.Count == 0)
-            {
-                _keystrokeLog.Add("timestamp,IsCtrl,IsAlt,IsShift,IsWin,Type,KeyCode,Application,ApplicationPath,ParentWindow,Window,MouseLocationX,MouseLocationY");
-            }
-
             string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
 
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
@@ -357,8 +367,8 @@ namespace m_record
                                 processName, processfileName,
                                 string.Empty, string.Empty, string.Empty, string.Empty);
 
-            _keystrokeLog.Add(csvRow);
-            // Optionally, write to file or update UI
+            var logFilePath = GetCurrentLogFilePath();
+            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
         }
 
         private void PlayStopButton_Click(object sender, RoutedEventArgs e)
@@ -371,6 +381,7 @@ namespace m_record
                 elapsedSeconds = 0;
                 TimerText.Text = "00:00:00";
                 timer.Start();
+                _currentLogFilePath = null; // Reset log file path for new session
                 StartRecordingKeystrokes();
             }
             else
@@ -380,13 +391,7 @@ namespace m_record
                 timer.Stop();
                 StopRecordingKeystrokes();
 
-                // Save keystroke log to CSV file
-                var logFilePath = System.IO.Path.Combine(
-                      GetRecordPath(),
-                      $"keystrokes_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
-                File.WriteAllLines(logFilePath, _keystrokeLog);
-
-                ShowNotification($"Keystroke log saved to: {logFilePath}", "Saved Keystroke Log", MessageBoxImage.Information);
+                ShowNotification("Keystroke log file updated as events occurred.", "Saved Keystroke Log", MessageBoxImage.Information);
             }
         }
         private void CloseButton_Click(object sender, RoutedEventArgs e)

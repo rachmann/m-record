@@ -4,14 +4,16 @@
         xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
         Title="m-record"
         Width="160" Height="200"
-        ResizeMode="NoResize"
-        WindowStyle="None"
         ShowInTaskbar="True"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation="Manual"
+        WindowStyle="None"
         Background="Transparent"
         AllowsTransparency="True"
         Icon="appicon.ico"
         >
+    <!--
+       
+    -->
     <Window.Resources>
         <Style x:Key="CloseIconDarkModeStyle" TargetType="iconPacks:PackIconMaterial">
             <Setter Property="Foreground" Value="White"/>
