@@ -40,89 +40,16 @@ namespace m_record
             isDarkMode = Properties.Settings.Default.IsDarkMode;
             ApplyTheme();
 
+            // Subscribe to ViewModel events
+            MainViewModel.RequestClose += () => this.Close();
+            MainViewModel.RequestCloseForm += () => this.Close();
+            MainViewModel.RequestOpenSettings += OpenSettingsDialog;
+            MainViewModel.RequestOpenHelp += OpenHelpDialog;
+            MainViewModel.RequestOpenAbout += OpenAboutDialog;
         }
 
-        private void ApplyTheme()
-        {
-            // Window and border
-            this.Background = isDarkMode ? Brushes.Black : Brushes.White;
-            if (this.Content is Border border)
-            {
-                border.Background = isDarkMode ? Brushes.Black : Brushes.White;
-                border.BorderBrush = isDarkMode ? Brushes.Gray : new SolidColorBrush(Color.FromRgb(136, 136, 136));
-            }
-            // Menu items:
-            // Menu and Close icons
-            ContextMenuButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
-            CloseButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
-
-            if (isDarkMode)
-            {
-                MenuIcon.Style = (Style)FindResource("MenuIconDarkModeStyle");
-                CloseIcon.Style = (Style)FindResource("CloseIconDarkModeStyle");
-            }
-            else
-            {
-                MenuIcon.Style = null;
-                MenuIcon.Foreground = Brushes.Black;
-                CloseIcon.Style = null;
-                CloseIcon.Foreground = Brushes.Black;
-            }
-
-            // Context menu background and text
-            if (ContextMenuButton.ContextMenu is ContextMenu menu)
-            {
-                menu.Background = isDarkMode ? Brushes.Black : Brushes.White;
-                menu.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-                foreach (var item in menu.Items)
-                {
-                    if (item is MenuItem mi)
-                    {
-                        mi.Background = isDarkMode ? Brushes.Black : Brushes.White;
-                        mi.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-                        mi.Style = isDarkMode ? (Style)FindResource("DarkModeMenuItemStyle") : null;
-                    }
-                }
-            }
-
-            // Main text
-            TimerText.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-
-            // Play/Stop icon
-            PlayStopButton.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
-            // Play/Stop style
-            PlayStopButton.Style = isDarkMode ? (Style)FindResource("DarkModePlayStopButtonStyle") : null;
-            // Status icon: keep red/green, but set background if needed
-            StatusIcon.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
-
-        }
-
-        #region Event Handlers
-
-        // Forward mouse events to the ViewModel
-        private void NotificationArea_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-            => MainViewModel.NotificationArea_MouseEnter();
-
-        private void NotificationArea_MouseLeave(object sender, MouseEventArgs e)
-            => MainViewModel.NotificationArea_MouseLeave();
-
-        private void NotificationArea_GotFocus(object sender, RoutedEventArgs e)
-            => MainViewModel.NotificationArea_GotFocus();
-
-        private void NotificationArea_LostFocus(object sender, RoutedEventArgs e)
-            => MainViewModel.NotificationArea_LostFocus();
-
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
-
-        private void CloseForm_Click(object sender, RoutedEventArgs e)
-        {
-            this.Close();
-        }
-
-        private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
+        // Move dialog logic to private methods:
+        private void OpenSettingsDialog()
         {
             var notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
             // Defensive: check if value is defined in the enum
@@ -169,18 +96,78 @@ namespace m_record
             }
         }
 
-        private void HelpMenuItem_Click(object sender, RoutedEventArgs e)
+        private void OpenHelpDialog()
         {
             var dlg = new HelpDialog { Owner = this };
             dlg.ShowDialog();
         }
 
-        private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+        private void OpenAboutDialog()
         {
             var dlg = new AboutDialog { Owner = this };
             dlg.ShowDialog();
         }
 
-        #endregion
+        private void ApplyTheme()
+        {
+            // Window and border
+            this.Background = isDarkMode ? Brushes.Black : Brushes.White;
+            if (this.Content is Border border)
+            {
+                border.Background = isDarkMode ? Brushes.Black : Brushes.White;
+                border.BorderBrush = isDarkMode ? Brushes.Gray : new SolidColorBrush(Color.FromRgb(136, 136, 136));
+            }
+            // Menu items:
+            // Menu and Close icons
+            ContextMenuButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
+            CloseButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
+
+            if (isDarkMode)
+            {
+                MenuIcon.Style = (Style)FindResource("MenuIconDarkModeStyle");
+                CloseIcon.Style = (Style)FindResource("CloseIconDarkModeStyle");
+            }
+            else
+            {
+                MenuIcon.Style = null;
+                MenuIcon.Foreground = Brushes.Black;
+                CloseIcon.Style = null;
+                CloseIcon.Foreground = Brushes.Black;
+            }
+
+            // Context menu background, text, and icon colors
+            if (ContextMenuButton.ContextMenu is ContextMenu menu)
+            {
+                menu.Background = isDarkMode ? Brushes.Black : Brushes.White;
+                menu.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
+                foreach (var item in menu.Items)
+                {
+                    if (item is MenuItem mi)
+                    {
+                        mi.Background = isDarkMode ? Brushes.Black : Brushes.White;
+                        mi.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
+                        mi.Style = isDarkMode ? (Style)FindResource("DarkModeMenuItemStyle") : null;
+
+                        // Set icon foreground for each menu item
+                        if (mi.Icon is MahApps.Metro.IconPacks.PackIconMaterial icon)
+                        {
+                            icon.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
+                        }
+                    }
+                }
+            }
+
+            // Main text
+            TimerText.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
+
+            // Play/Stop icon
+            PlayStopButton.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
+            // Play/Stop style
+            PlayStopButton.Style = isDarkMode ? (Style)FindResource("DarkModePlayStopButtonStyle") : null;
+            // Status icon: keep red/green, but set background if needed
+            StatusIcon.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
+
+        }
+
     }
 }

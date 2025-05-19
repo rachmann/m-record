@@ -41,10 +41,23 @@ namespace m_record.ViewModels
      
         public ICommand PlayStopCommand { get; }
         public ICommand CaptureScreensCommand { get; }
-
+        public ICommand NotificationAreaMouseEnterCommand { get; }
+        public ICommand NotificationAreaMouseLeaveCommand { get; }
+        public ICommand NotificationAreaGotFocusCommand { get; }
+        public ICommand NotificationAreaLostFocusCommand { get; }
+        public ICommand CloseCommand { get; }
+        public ICommand CloseFormCommand { get; }
+        public ICommand OpenSettingsCommand { get; }
+        public ICommand OpenHelpCommand { get; }
+        public ICommand OpenAboutCommand { get; }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-
+        // Events for the View to subscribe to
+        public event Action? RequestClose;
+        public event Action? RequestCloseForm;
+        public event Action? RequestOpenSettings;
+        public event Action? RequestOpenHelp;
+        public event Action? RequestOpenAbout;
 
 
         public MainViewModel()
@@ -57,6 +70,17 @@ namespace m_record.ViewModels
             //   CaptureScreensCommand = new RelayCommand(_ => CaptureScreens(), _ => IsRecording);
             // but we have logic to show the notification area when not recording
             CaptureScreensCommand = new RelayCommand(_ => CaptureScreens());
+            // Notification area mouse events
+            NotificationAreaMouseEnterCommand = new RelayCommand(_ => OnNotificationAreaMouseEnter());
+            NotificationAreaMouseLeaveCommand = new RelayCommand(_ => OnNotificationAreaMouseLeave());
+            NotificationAreaGotFocusCommand = new RelayCommand(_ => OnNotificationAreaGotFocus());
+            NotificationAreaLostFocusCommand = new RelayCommand(_ => OnNotificationAreaLostFocus());
+
+            CloseCommand = new RelayCommand(_ => RequestClose?.Invoke());
+            CloseFormCommand = new RelayCommand(_ => RequestCloseForm?.Invoke());
+            OpenSettingsCommand = new RelayCommand(_ => RequestOpenSettings?.Invoke());
+            OpenHelpCommand = new RelayCommand(_ => RequestOpenHelp?.Invoke());
+            OpenAboutCommand = new RelayCommand(_ => RequestOpenAbout?.Invoke());
 
             _notificationTimer.Interval = TimeSpan.FromSeconds(4);
             _notificationTimer.Tick += (s, e) =>
@@ -216,8 +240,34 @@ namespace m_record.ViewModels
             }
         }
 
+        // Private handlers for commands
+        private void OnNotificationAreaMouseEnter()
+        {
+            _notificationTimer.Stop();
+        }
 
+        private void OnNotificationAreaMouseLeave()
+        {
+            if (NotificationAreaVisibility == Visibility.Visible)
+            {
+                _notificationTimer.Stop();
+                _notificationTimer.Start();
+            }
+        }
 
+        private void OnNotificationAreaGotFocus()
+        {
+            _notificationTimer.Stop();
+        }
+
+        private void OnNotificationAreaLostFocus()
+        {
+            if (NotificationAreaVisibility == Visibility.Visible)
+            {
+                _notificationTimer.Stop();
+                _notificationTimer.Start();
+            }
+        }
 
         public void ShowNotification(string message, string reason, MessageBoxImage messageType)
         {
