@@ -23,7 +23,7 @@ namespace m_record
         {
             InitializeComponent();
         }
-        // add ok button click event handler    
+
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             this.Close();

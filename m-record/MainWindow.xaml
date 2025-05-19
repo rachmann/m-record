@@ -163,28 +163,32 @@
                         Background="Transparent"
                         BorderThickness="0"
                               Margin="0,0,5,0" 
-                        Click="StatusIconButton_Click">
+                        Command="{Binding CaptureScreensCommand}">
                         <iconPacks:PackIconMaterial x:Name="StatusIcon"
                                 Kind="CheckboxBlankCircle"
                                 Width="38" Height="38"
                                 Margin="0,0,0,0"
-                                Foreground="Green"/>
+                                Foreground="{Binding StatusIconForeground}" />
                     </Button>
                     <!-- Play/Stop Button -->
                         <Button Name="PlayStopButton" 
                             Width="40" Height="40" 
                             Background="Transparent" 
                             BorderThickness="0"
-                            Click="PlayStopButton_Click">
-                            <iconPacks:PackIconMaterial x:Name="PlayStopIcon"
-                                Kind="RecordCircleOutline"
+                            Command="{Binding PlayStopCommand}">
+                            <iconPacks:PackIconMaterial
+                                Kind="{Binding PlayStopIconKind}"
                                 Width="38" Height="38"
                                 Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                        </Button>
+                    </Button>
                 </StackPanel>
                 <!-- Timer -->
-                <TextBlock Name="TimerText" Text="00:00:00" FontSize="20" FontWeight="Bold"
-                           HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <TextBlock Name="TimerText"
+                   Text="{Binding TimerText, Mode=OneWay}"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Margin="0,10,0,0"/>
             </StackPanel>
             <DockPanel LastChildFill="True" VerticalAlignment="Bottom" Height="60" Margin="8,0,8,8">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
@@ -195,11 +199,12 @@
                          IsReadOnly="True"
                          HorizontalScrollBarVisibility="Auto"
                          VerticalScrollBarVisibility="Auto"
-                         Visibility="Collapsed"
+                         Visibility="{Binding NotificationAreaVisibility, Mode=OneWay}"
                          MouseEnter="NotificationArea_MouseEnter"
                          MouseLeave="NotificationArea_MouseLeave"
                          GotFocus="NotificationArea_GotFocus"
-                         LostFocus="NotificationArea_LostFocus" />
+                         LostFocus="NotificationArea_LostFocus"
+                         Text="{Binding NotificationText, Mode=OneWay}"/>
                 </ScrollViewer>
             </DockPanel>
         </Grid>

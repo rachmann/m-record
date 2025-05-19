@@ -1,39 +1,51 @@
 ﻿<Window x:Class="m_record.SettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings" Height="350" Width="300"
+        Title="Settings" Height="400" Width="300"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         WindowStyle="ToolWindow">
     <Grid Margin="20">
 
         <StackPanel Margin="20,0,10,20" Grid.Row="0">
-            <CheckBox x:Name="DarkModeCheckBox" Content="Enable Dark Mode" />
+            <CheckBox
+                x:Name="DarkModeCheckBox"
+                Content="Enable Dark Mode"
+                IsChecked="{Binding IsDarkMode, Mode=TwoWay}" />
         </StackPanel>
         <StackPanel Margin="20,0,10,20" Grid.Row="1">
-            <!-- ...existing controls... -->
             <TextBlock Text="Notification Style:" Margin="0,10,0,0"/>
-            <ComboBox x:Name="NotifyComboBox" Margin="0,6,0,0" Width="200">
-                <ComboBoxItem Content="None" />
-                <ComboBoxItem Content="MessageOnly" />
-                <ComboBoxItem Content="NotificationArea" />
-                <ComboBoxItem Content="Both" />
-            </ComboBox>
-
-            <!-- ...existing buttons... -->
+            <ComboBox x:Name="NotifyComboBox" 
+                      Margin="0,6,0,0" Width="200"
+                      ItemsSource="{Binding NotifyOptions}"
+                      DisplayMemberPath="Value"
+                      SelectedValuePath="Key"
+                      SelectedValue="{Binding SelectedNotificationStyle, Mode=TwoWay}" />
         </StackPanel>
         <StackPanel Margin="20,0,10,20" Grid.Row="2">
             <!-- ...existing controls... -->
             <TextBlock Text="Record Path:" Margin="0,10,0,0"/>
-            <TextBox x:Name="RecordPathTextBox" Margin="0,6,0,0" Width="200" />
-
-            <!-- ...existing buttons... -->
+            <TextBox
+                x:Name="RecordPathTextBox"
+                Margin="0,6,0,0"
+                Width="200"
+                Text="{Binding SelectedRecordingPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="3">
+        <StackPanel Margin="20,0,10,20" Grid.Row="3">
+            <TextBlock Text="Screen Captures:" Margin="0,10,0,0"/>
+            <ComboBox x:Name="ScreensComboBox" Margin="0,6,0,0" Width="200"
+                ItemsSource="{Binding ScreenCaptureOptions}"
+                DisplayMemberPath="Value"
+                SelectedValuePath="Key"
+                SelectedValue="{Binding SelectedScreenCaptureStyle, Mode=TwoWay}" />
+        </StackPanel>
+        <!-- ...existing buttons... -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="4">
             <Button Content="OK" Width="60" Margin="0,0,10,0" Click="OkButton_Click"/>
             <Button Content="Cancel" Width="60" Click="CancelButton_Click"/>
         </StackPanel>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
