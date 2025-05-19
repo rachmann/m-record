@@ -1,17 +1,6 @@
 ﻿using m_record.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using m_record.ViewModels;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace m_record
 {
@@ -20,25 +9,20 @@ namespace m_record
     /// </summary>
     public partial class SettingsDialog : Window
     {
-        public bool IsDarkMode { get; private set; }
-        public NotificationStyle SelectedNotificationStyle { get; private set; }
+        public SettingsViewModel SettingsViewModel { get; }
 
-        public string SelectedRecordingPath { get; set; }
-
-        public SettingsDialog(bool currentDarkMode, string recordingPath, NotificationStyle currentNotify)
+        public SettingsDialog(bool currentDarkMode, string recordingPath, NotificationStyle currentNotify, ScreenCaptureStyle currentScreenCapture)
         {
             InitializeComponent();
-            DarkModeCheckBox.IsChecked = currentDarkMode;
-            NotifyComboBox.SelectedIndex = (int)currentNotify;
-            RecordPathTextBox.Text = recordingPath;
-            SelectedRecordingPath = recordingPath;
+
+            SettingsViewModel = new SettingsViewModel();
+            DataContext = SettingsViewModel;
+
+            SettingsViewModel.LoadSettings(currentDarkMode, recordingPath, currentNotify, currentScreenCapture);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            IsDarkMode = DarkModeCheckBox.IsChecked == true;
-            SelectedNotificationStyle = (NotificationStyle)NotifyComboBox.SelectedIndex;
-            SelectedRecordingPath = RecordPathTextBox.Text;
             DialogResult = true;
             Close();
         }
@@ -48,5 +32,10 @@ namespace m_record
             DialogResult = false;
             Close();
         }
+
+        public bool IsDarkMode => SettingsViewModel.IsDarkMode;
+        public NotificationStyle SelectedNotificationStyle => SettingsViewModel.SelectedNotificationStyle;
+        public string SelectedRecordingPath => SettingsViewModel.SelectedRecordingPath;
+        public ScreenCaptureStyle SelectedScreenCaptureStyle => SettingsViewModel.SelectedScreenCaptureStyle;
     }
 }

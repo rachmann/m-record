@@ -45,5 +45,14 @@ namespace m_record.Extensions
             // Return default (0) if no match found
             return default;
         }
+
+        public static IEnumerable<KeyValuePair<Enum, string>> GetEnumDescriptions<T>() where T : Enum
+        {
+            return Enum.GetValues(typeof(T))
+                       .Cast<Enum>()
+                       .Select(e => new KeyValuePair<Enum, string>(
+                           e, ToDescription(e)));
+        }
+     
     }
 }

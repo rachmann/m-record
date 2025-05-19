@@ -3,6 +3,7 @@ using m_record.Constants;
 using m_record.Enums;
 using m_record.Helpers;
 using m_record.Services;
+using m_record.ViewModels;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -27,69 +28,20 @@ namespace m_record
     /// </summary>
     public partial class MainWindow : Window
     {
-        private bool isRecording = false;
-        private DispatcherTimer timer;
-        private int elapsedSeconds = 0;
+        public MainViewModel MainViewModel { get; }
+
         private bool isDarkMode = false;
-        private IKeyboardMouseEvents? _globalHook;
-        private List<string> _keystrokeLog = new();
-        private DispatcherTimer _notificationTimer = new DispatcherTimer();
-        private readonly ScreenCaptureService _screenCaptureService = new();
-        private string? _currentLogFilePath = null;
 
         public MainWindow()
         {
             InitializeComponent();
+            MainViewModel = new MainViewModel();
+            DataContext = MainViewModel;
             isDarkMode = Properties.Settings.Default.IsDarkMode;
             ApplyTheme();
-            UpdateRecordingState();
 
-            // Set up timer
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(1);
-            timer.Tick += Timer_Tick;
-
-            _notificationTimer.Interval = TimeSpan.FromSeconds(4);
-            _notificationTimer.Tick += NotificationTimer_Tick;
         }
 
-        private void StartRecordingKeystrokes()
-        {
-            if (_globalHook == null)
-            {
-                _globalHook = Hook.GlobalEvents();
-                _globalHook.KeyDown += GlobalHook_KeyDown;
-                _globalHook.MouseDownExt += GlobalHook_MouseDownExt;
-            }
-        }
-
-        private void StopRecordingKeystrokes()
-        {
-            if (_globalHook != null)
-            {
-                _globalHook.KeyDown -= GlobalHook_KeyDown;
-                _globalHook.MouseDownExt -= GlobalHook_MouseDownExt;
-                _globalHook.Dispose();
-                _globalHook = null;
-            }
-        }
-
-        private void NotificationTimer_Tick(object? sender, EventArgs e)
-        {
-            NotificationArea.Visibility = Visibility.Collapsed;
-            _notificationTimer.Stop();
-        }
-
-        private void Timer_Tick(object? sender, EventArgs e)
-        {
-            elapsedSeconds++;
-            TimerText.Text = TimeSpan.FromSeconds(elapsedSeconds).ToString(@"hh\:mm\:ss");
-        }
-
-        private void UpdateRecordingState()
-        {
-            // This method can be used to update UI or other states when recording state changes.
-        }
         private void ApplyTheme()
         {
             // Window and border
@@ -138,259 +90,28 @@ namespace m_record
 
             // Play/Stop icon
             PlayStopButton.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
-            // use this for other buttons?
-            // PlayStopButton.Style = isDarkMode ? (Style)FindResource("DarkModeButtonStyle") : null;
+            // Play/Stop style
             PlayStopButton.Style = isDarkMode ? (Style)FindResource("DarkModePlayStopButtonStyle") : null;
-
             // Status icon: keep red/green, but set background if needed
             StatusIcon.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
 
         }
 
-        // Helper to get the save directory, falling back to Desktop if not set
-        private string GetRecordPath()
-        {
-            var path = Properties.Settings.Default.RecordPath;
-            if (string.IsNullOrWhiteSpace(path))
-                path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            return path;
-        }
-
-        private string GetCurrentLogFilePath()
-        {
-            var dir = GetRecordPath();
-            var fileName = $"mrecord_{DateTime.Now:yyyy}_{DateTime.Now.DayOfYear:D3}.csv";
-            var path = Path.Combine(dir, fileName);
-
-            // If this is the first event of the session, and file doesn't exist, write header
-            if (_currentLogFilePath != path)
-            {
-                _currentLogFilePath = path;
-                if (!File.Exists(path))
-                {
-                    File.WriteAllText(path, "timestamp,Type,IsCtrl,IsAlt,IsShift,IsWin,KeyCode,Application,ApplicationPath,ParentWindow,Window,FilePath,MouseLocationX,MouseLocationY" + Environment.NewLine);
-                }
-            }
-            return path;
-        }
-
-        private MessageBoxResult ShowNotification(string message, string reason, MessageBoxImage messageType)
-        {
-            NotificationStyle notifySetting;
-
-            // Try to parse the setting, fallback to None if invalid
-            try
-            {
-                notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
-                // Defensive: check if value is defined in the enum
-                if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
-                    notifySetting = NotificationStyle.None;
-            }
-            catch
-            {
-                notifySetting = NotificationStyle.None;
-            }
-
-            if (notifySetting == NotificationStyle.None)
-                return MessageBoxResult.None;
-
-            if (messageType == MessageBoxImage.Question)
-            {
-                return System.Windows.MessageBox.Show(message, reason, MessageBoxButton.OKCancel, messageType);
-            }
-
-            if (notifySetting == NotificationStyle.MessageOnly || notifySetting == NotificationStyle.Both)
-            {
-                System.Windows.MessageBox.Show(message, reason, MessageBoxButton.OK, messageType);
-            }
-
-            if (notifySetting == NotificationStyle.NotificationArea || notifySetting == NotificationStyle.Both)
-            {
-                NotificationArea.Visibility = Visibility.Visible;
-                var prefix =
-                    messageType == MessageBoxImage.Error
-                        ? "Error: "
-                        : messageType == MessageBoxImage.Information
-                            ? "Info: "
-                            : messageType == MessageBoxImage.Warning
-                                ? "Warning: "
-                                : messageType == MessageBoxImage.Exclamation
-                                    ? "Alert: "
-                                    : "";
-                NotificationArea.Text +=
-                 (string.IsNullOrEmpty(NotificationArea.Text) ? "" : "\n") + prefix + message;
-                NotificationArea.ScrollToEnd();
-                _notificationTimer.Stop();
-                _notificationTimer.Start();
-            }
-
-            return MessageBoxResult.None;
-        }
-
         #region Event Handlers
 
+        // Forward mouse events to the ViewModel
         private void NotificationArea_MouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            _notificationTimer.Stop();
-        }
+            => MainViewModel.NotificationArea_MouseEnter();
 
         private void NotificationArea_MouseLeave(object sender, MouseEventArgs e)
-        {
-            if (NotificationArea.Visibility == Visibility.Visible && !NotificationArea.IsFocused)
-            {
-                _notificationTimer.Stop();
-                _notificationTimer.Start();
-            }
-        }
+            => MainViewModel.NotificationArea_MouseLeave();
 
         private void NotificationArea_GotFocus(object sender, RoutedEventArgs e)
-        {
-            _notificationTimer.Stop();
-        }
+            => MainViewModel.NotificationArea_GotFocus();
 
         private void NotificationArea_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (NotificationArea.Visibility == Visibility.Visible && !NotificationArea.IsMouseOver)
-            {
-                _notificationTimer.Stop();
-                _notificationTimer.Start();
-            }
-        }
+            => MainViewModel.NotificationArea_LostFocus();
 
-        private void StatusIconButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (!isRecording)
-            {
-                _notificationTimer.Stop();
-                if (NotificationArea.Visibility == Visibility.Visible)
-                {
-                    NotificationArea.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    NotificationArea.Visibility = Visibility.Visible;
-                    _notificationTimer.Start();
-                }
-
-                return;
-            }
-            var NowDate = DateTime.Now;
-            // 1. Get timestamp in the same format as keylog
-            string timestamp = NowDate.ToString(Constants.Constants.TimestampFormat);
-            // 2. Get the foreground application info
-            var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
-
-            // 3. Use ScreenCaptureService to capture all screens
-            string directory = GetRecordPath();
-            string filePrefix = "screensave";
-            string fileSuffix = ".png";
-            var screens = System.Windows.Forms.Screen.AllScreens;
-            if (screens == null || screens.Length == 0)
-            {
-                ShowNotification("No screens detected.", "Error", MessageBoxImage.Error);
-                return;
-            }
-            // Use the service to capture this screen
-            // This will save all screens, but we want to show notification and log for each
-            var screenFilePaths = _screenCaptureService.CaptureAllScreens(NowDate, directory, filePrefix, fileSuffix);
-
-            for (int i = 0; i < screens.Length; i++)
-            {
-                ShowNotification($"Screen capture saved", "Saved Screen Shot", MessageBoxImage.Information);
-
-                // Add to keylog for each screen
-                string logFilePath = GetCurrentLogFilePath();
-                string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
-                                      timestamp,
-                                      "SCREENCAP",
-                                      string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
-                                      processName, processfileName,
-                                      string.Empty,
-                                      $"Screen_{i + 1}", 
-                                      screenFilePaths[i],
-                                      string.Empty, string.Empty);
-
-                File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
-            }
-        }
-
-        private void GlobalHook_MouseDownExt(object? sender, MouseEventExtArgs e)
-        {
-            var point = new System.Drawing.Point(e.X, e.Y);
-
-            var windowTitle = MouseWindowHelper.GetWindowTitleAtPoint(point);
-            var parentWindowTitle = MouseWindowHelper.GetParentWindowTitleAtPoint(point);
-            var processName = MouseWindowHelper.GetProcessNameAtPoint(point);
-            var processfileName = MouseWindowHelper.GetProcessFileNameAtPoint(point);
-
-            // 1. Get timestamp in the same format as keylog
-            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
-                                  timestamp,
-                                  "MOUSECLICK",
-                                  string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
-                                  processName, processfileName,
-                                  parentWindowTitle, windowTitle,
-                                  string.Empty, $"{e.X}", $"{e.Y}");
-
-            var logFilePath = GetCurrentLogFilePath();
-            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
-        }
-
-        private void GlobalHook_KeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
-        {
-            string timestamp = DateTime.Now.ToString(Constants.Constants.TimestampFormat);
-
-            var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
-
-            // Modifiers
-            bool isCtrl = e.Control;
-            bool isAlt = e.Alt;
-            bool isShift = e.Shift;
-            bool isWin =
-                (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.LWin) == System.Windows.Forms.Keys.LWin ||
-                (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.RWin) == System.Windows.Forms.Keys.RWin;
-
-            string csvRow = string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13}",
-                                timestamp,
-                                "KEYSTROKE",
-                                isCtrl ? "T" : "F",
-                                isAlt ? "T" : "F",
-                                isShift ? "T" : "F",
-                                isWin ? "T" : "F",
-                                e.KeyCode,
-                                processName, processfileName,
-                                string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-
-            var logFilePath = GetCurrentLogFilePath();
-            File.AppendAllText(logFilePath, csvRow + Environment.NewLine);
-        }
-
-        private void PlayStopButton_Click(object sender, RoutedEventArgs e)
-        {
-            isRecording = !isRecording;
-            if (isRecording)
-            {
-                StatusIcon.Foreground = Brushes.Red;
-                PlayStopIcon.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.StopCircleOutline;
-                elapsedSeconds = 0;
-                TimerText.Text = "00:00:00";
-                timer.Start();
-                _currentLogFilePath = null; // Reset log file path for new session
-                StartRecordingKeystrokes();
-            }
-            else
-            {
-                StatusIcon.Foreground = Brushes.Green;
-                PlayStopIcon.Kind = MahApps.Metro.IconPacks.PackIconMaterialKind.RecordCircleOutline;
-                timer.Stop();
-                StopRecordingKeystrokes();
-
-                ShowNotification("Keystroke log file updated as events occurred.", "Saved Keystroke Log", MessageBoxImage.Information);
-            }
-        }
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -408,12 +129,17 @@ namespace m_record
             if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
                 notifySetting = NotificationStyle.None;
 
+            var screenCaptureSetting = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
+            // Defensive: check if value is defined in the enum
+            if (!Enum.IsDefined(typeof(ScreenCaptureStyle), screenCaptureSetting))
+                screenCaptureSetting = ScreenCaptureStyle.None;
+
             var recordingPath = Properties.Settings.Default.RecordPath ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (string.IsNullOrWhiteSpace(recordingPath))
             {
                 recordingPath = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    "m_record"
+                    Constants.Constants.AppName
                 );
             }
 
@@ -425,18 +151,19 @@ namespace m_record
                 }
                 catch (Exception ex)
                 {
-                    ShowNotification($"Failed to create directory: {ex.Message}", "Error", MessageBoxImage.Error);
+                    MainViewModel.ShowNotification($"{Constants.Constants.ErrorFailedToCreateDir} {ex.Message}", Constants.Constants.ErrorTitle, MessageBoxImage.Error);
                     return;
                 }
             }
 
-            var dlg = new SettingsDialog(isDarkMode, recordingPath, notifySetting) { Owner = this };
+            var dlg = new SettingsDialog(isDarkMode, recordingPath, notifySetting, screenCaptureSetting) { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 isDarkMode = dlg.IsDarkMode;
                 Properties.Settings.Default.IsDarkMode = isDarkMode;
                 Properties.Settings.Default.NotifyStyle = (int)dlg.SelectedNotificationStyle;
                 Properties.Settings.Default.RecordPath = dlg.SelectedRecordingPath;
+                Properties.Settings.Default.ScreenCaptureStyle = (int)dlg.SelectedScreenCaptureStyle;
                 Properties.Settings.Default.Save();
                 ApplyTheme();
             }

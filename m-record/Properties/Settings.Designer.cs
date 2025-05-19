@@ -58,5 +58,17 @@ namespace m_record.Properties {
                 this["NotifyStyle"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("2")]
+        public int ScreenCaptureStyle {
+            get {
+                return ((int)(this["ScreenCaptureStyle"]));
+            }
+            set {
+                this["ScreenCaptureStyle"] = value;
+            }
+        }
     }
 }
