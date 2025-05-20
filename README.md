@@ -2,7 +2,7 @@
 
 
 # m-record
-## Key Logger
+## Key and Mouse-click Logger, with Screen Capture capabilities
 
 ### Memory Usage Calculation
 
@@ -32,5 +32,8 @@ Size of Keylog for 10 hours at an average of 80 WPM
 
 ### Summary
 
-After 10 hours of recording at 80 WPM, the keystroke log will use approximately **18–20 MB** of memory. 
-This is well within the capabilities of modern systems. For longer sessions or higher rates, I might consider periodically saving the log to disk.
+After 10 hours of recording at 80 WPM, the keystroke log will use approximately **18–20 MB** of disk space. 
+This is well within the capabilities of modern systems, but good to know if you point to an S3 bucket or similar
+
+Mouse clicks may add 10% to the overall data requirements.
+Screen Captures are dependent on the number of screens and settings used.
