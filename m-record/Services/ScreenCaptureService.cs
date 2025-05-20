@@ -12,7 +12,7 @@ namespace m_record.Services
     {
         public ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
 
-        public List<string> CaptureAllScreens(DateTime dateNow, string directory)
+        public static List<string> CaptureAllScreens(DateTime dateNow, string directory)
         {
             ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
             if (screenCaptureStyle == ScreenCaptureStyle.None)
@@ -47,7 +47,7 @@ namespace m_record.Services
                     g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
                 }
                 // The service will save the file and return the path
-                string fileName = $"{Constants.Constants.ScreenCaptureFilePrefix}_{dateNow:yyyy}_{dateNow.DayOfYear:D3}_{i + 1}{Constants.Constants.ScreenCaptureFileSuffix}";
+                string fileName = $"{AppConstants.ScreenCaptureFilePrefix}_{dateNow:yyyy}_{dateNow.DayOfYear:D3}_{i + 1}{AppConstants.ScreenCaptureFileSuffix}";
                 string filePath = Path.Combine(directory, fileName);
                 bmp.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
                 filePaths.Add(filePath);

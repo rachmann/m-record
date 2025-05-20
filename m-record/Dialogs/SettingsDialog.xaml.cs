@@ -1,8 +1,9 @@
 ﻿using m_record.Enums;
 using m_record.ViewModels;
+using Microsoft.Extensions.Logging;
 using System.Windows;
 
-namespace m_record
+namespace m_record.Dialogs
 {
     /// <summary>
     /// Interaction logic for SettingsDialog.xaml
@@ -11,14 +12,13 @@ namespace m_record
     {
         public SettingsViewModel SettingsViewModel { get; }
 
-        public SettingsDialog(bool currentDarkMode, string recordingPath, NotificationStyle currentNotify, ScreenCaptureStyle currentScreenCapture)
+        public SettingsDialog()
         {
             InitializeComponent();
-
+        
             SettingsViewModel = new SettingsViewModel();
             DataContext = SettingsViewModel;
-
-            SettingsViewModel.LoadSettings(currentDarkMode, recordingPath, currentNotify, currentScreenCapture);
+            // No parameters, ViewModel handles initialization
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)

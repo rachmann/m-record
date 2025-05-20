@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 
 namespace m_record.Helpers
 {
-
     public static class ForegroundAppHelper
     {
         [DllImport("user32.dll")]

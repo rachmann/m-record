@@ -7,15 +7,33 @@ namespace m_record.Services
 {
     public class NotificationService
     {
-        private readonly Action<string> _showInArea;
+        private Action<string> _showInArea;
 
+        public NotificationService()
+        {
+            // to default to a no-op
+            _showInArea = message => { };
+           
+        }
         public NotificationService(Action<string> showInArea)
+        {
+            _showInArea = showInArea;
+        }
+
+        public void SetActionDelegates(Action<string> showInArea)
         {
             _showInArea = showInArea;
         }
 
         public void ShowNotification(string message, string reason, MessageBoxImage messageType)
         {
+            if (_showInArea == null)
+            {
+                // log an error here 
+                return;
+            }
+                
+
             NotificationStyle notifySetting;
 
             try
@@ -41,13 +59,14 @@ namespace m_record.Services
             {
                 string prefix = messageType switch
                 {
-                    MessageBoxImage.Error => Constants.Constants.ErrorPrefix,
-                    MessageBoxImage.Information => Constants.Constants.InfoPrefix,
-                    MessageBoxImage.Warning => Constants.Constants.WarningPrefix,
+                    MessageBoxImage.Error => AppConstants.ErrorPrefix,
+                    MessageBoxImage.Information => AppConstants.InfoPrefix,
+                    MessageBoxImage.Warning => AppConstants.WarningPrefix,
                     _ => String.Empty
                 };
                 _showInArea(prefix + message);
             }
         }
+
     }
 }
