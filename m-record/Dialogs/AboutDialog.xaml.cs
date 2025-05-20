@@ -14,9 +14,6 @@ using System.Windows.Shapes;
 
 namespace m_record.Dialogs
 {
-    /// <summary>
-    /// Interaction logic for AboutDialog.xaml
-    /// </summary>
     public partial class AboutDialog : Window
     {
         public AboutDialog()
