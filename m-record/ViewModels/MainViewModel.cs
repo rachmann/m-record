@@ -1,44 +1,49 @@
+using m_record.Constants;
 using m_record.Enums;
-using m_record.Extensions;
 using m_record.Helpers;
 using m_record.Services;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace m_record.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
+        private readonly ILogger<MainViewModel> _logger;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public event Action? RequestClose;
+        public event Action? RequestCloseForm;
+        public event Action? RequestOpenSettings;
+        public event Action? RequestOpenHelp;
+        public event Action? RequestOpenAbout;
+
         private bool _isRecording;
         public bool CanCaptureScreens => IsRecording;
         private int _elapsedSeconds;
         private bool _isDarkMode;
-        private string _notificationText = String.Empty;
-        private string _timerText = Constants.Constants.TimerInitialText;
+        private string _notificationText = string.Empty;
+        private string _timerText = AppConstants.TimerInitialText;
         private Brush _statusIconForeground = Brushes.Green;
         private object _playStopIconKind = MahApps.Metro.IconPacks.PackIconMaterialKind.RecordCircleOutline;
-      
-        private readonly ScreenCaptureService _screenCaptureService = new();
-        private readonly LoggingService _loggingService = new();
+
+        private readonly ScreenCaptureService _screenCaptureService;
+        private readonly InputLoggingService _inputLoggingService;
         private readonly NotificationService _notificationService;
         private InputHookService? _inputHookService;
 
+        // add error logging here with a logging framework
+
         private readonly DispatcherTimer _timer;
-        private DispatcherTimer _notificationTimer = new DispatcherTimer();
+        private readonly DispatcherTimer _notificationTimer = new();
 
         private Visibility _notificationAreaVisibility = Visibility.Collapsed;
-     
+
         public ICommand PlayStopCommand { get; }
         public ICommand CaptureScreensCommand { get; }
         public ICommand NotificationAreaMouseEnterCommand { get; }
@@ -51,31 +56,27 @@ namespace m_record.ViewModels
         public ICommand OpenHelpCommand { get; }
         public ICommand OpenAboutCommand { get; }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        // Events for the View to subscribe to
-        public event Action? RequestClose;
-        public event Action? RequestCloseForm;
-        public event Action? RequestOpenSettings;
-        public event Action? RequestOpenHelp;
-        public event Action? RequestOpenAbout;
-
-
-        public MainViewModel()
+        public MainViewModel(
+            ILogger<MainViewModel> logger,
+            ScreenCaptureService screenCaptureService,
+            InputLoggingService loggingService,
+            NotificationService notificationService)
         {
-           
+            _logger = logger;
+            _screenCaptureService = screenCaptureService;
+            _inputLoggingService = loggingService;
+
+            _notificationService = notificationService;
+            _notificationService.SetActionDelegates(AppendNotificationText);
+
             _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += (s, e) => ElapsedSeconds++;
             PlayStopCommand = new RelayCommand(_ => ToggleRecording());
-            // to only allow screen capture when recording is active...
-            //   CaptureScreensCommand = new RelayCommand(_ => CaptureScreens(), _ => IsRecording);
-            // but we have logic to show the notification area when not recording
             CaptureScreensCommand = new RelayCommand(_ => CaptureScreens());
-            // Notification area mouse events
             NotificationAreaMouseEnterCommand = new RelayCommand(_ => OnNotificationAreaMouseEnter());
             NotificationAreaMouseLeaveCommand = new RelayCommand(_ => OnNotificationAreaMouseLeave());
             NotificationAreaGotFocusCommand = new RelayCommand(_ => OnNotificationAreaGotFocus());
             NotificationAreaLostFocusCommand = new RelayCommand(_ => OnNotificationAreaLostFocus());
-
             CloseCommand = new RelayCommand(_ => RequestClose?.Invoke());
             CloseFormCommand = new RelayCommand(_ => RequestCloseForm?.Invoke());
             OpenSettingsCommand = new RelayCommand(_ => RequestOpenSettings?.Invoke());
@@ -89,12 +90,7 @@ namespace m_record.ViewModels
                 _notificationTimer.Stop();
             };
 
-            _notificationService = new NotificationService(AppendNotificationText);
-
             _isDarkMode = Properties.Settings.Default.IsDarkMode;
-
-
-            
         }
 
         public bool IsRecording
@@ -123,10 +119,6 @@ namespace m_record.ViewModels
                     OnPropertyChanged();
                 }
             }
-        }
-        private void Timer_Tick(object? sender, EventArgs e)
-        {
-            _elapsedSeconds++;
         }
 
         public string TimerText
@@ -173,14 +165,15 @@ namespace m_record.ViewModels
                 StatusIconForeground = Brushes.Red;
                 PlayStopIconKind = MahApps.Metro.IconPacks.PackIconMaterialKind.StopCircleOutline;
                 ElapsedSeconds = 0;
-                TimerText = Constants.Constants.TimerInitialText;
+                TimerText = AppConstants.TimerInitialText;
                 _timer.Start();
-                _loggingService.GetCurrentLogFilePath(); // Ensure log file is ready
+                _inputLoggingService.GetCurrentLogFilePath(); // Ensure log file is ready
                 _inputHookService = new InputHookService(
-                    csvRow => _loggingService.AppendLog(csvRow),
-                    csvRow => _loggingService.AppendLog(csvRow)
+                    csvRow => _inputLoggingService.AppendLog(csvRow),
+                    csvRow => _inputLoggingService.AppendLog(csvRow)
                 );
                 _inputHookService.Start();
+                _logger.LogInformation(AppConstants.InfoRecordingStarted);
             }
             else
             {
@@ -191,7 +184,8 @@ namespace m_record.ViewModels
                 _inputHookService?.Dispose();
                 _inputHookService = null;
 
-                _notificationService.ShowNotification(Constants.Constants.KeystrokeLogSavedMessage, Constants.Constants.KeystrokeLogSavedTitle, MessageBoxImage.Information);
+                _notificationService.ShowNotification(AppConstants.KeystrokeLogSavedMessage, AppConstants.KeystrokeLogSavedTitle, MessageBoxImage.Information);
+                _logger.LogInformation(AppConstants.InfoRecordingStopped);
             }
         }
 
@@ -209,26 +203,29 @@ namespace m_record.ViewModels
             }
 
             var nowDate = DateTime.Now;
-            string timestamp = nowDate.ToString(Constants.Constants.LogTimestampFormat);
+            string timestamp = nowDate.ToString(AppConstants.LogTimestampFormat);
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
-            string directory = _loggingService.GetRecordPath();
-           
-            var screenFilePaths = _screenCaptureService.CaptureAllScreens(nowDate, directory);
+            string directory = InputLoggingService.GetRecordPath();
+
+            var screenFilePaths = ScreenCaptureService.CaptureAllScreens(nowDate, directory);
 
             if (screenFilePaths == null || screenFilePaths.Count == 0)
             {
-                if(_screenCaptureService.screenCaptureStyle != ScreenCaptureStyle.None)
-                    _notificationService.ShowNotification(Constants.Constants.NoScreensDetectedMessage, Constants.Constants.ErrorTitle, MessageBoxImage.Error);
+                if (_screenCaptureService.screenCaptureStyle != ScreenCaptureStyle.None)
+                {
+                    _notificationService.ShowNotification(AppConstants.NoScreensDetectedMessage, AppConstants.ErrorTitle, MessageBoxImage.Error);
+                    _logger.LogError(AppConstants.NoScreensDetectedMessage);
+                }
                 return;
             }
 
             for (int i = 0; i < screenFilePaths.Count; i++)
             {
-                _notificationService.ShowNotification($"{Constants.Constants.ScreenCaptureSavedMessage} : {screenFilePaths[i]}" , Constants.Constants.ScreenCaptureSavedTitle, MessageBoxImage.Information);
+                _notificationService.ShowNotification($"{AppConstants.ScreenCaptureSavedMessage} : {screenFilePaths[i]}", AppConstants.ScreenCaptureSavedTitle, MessageBoxImage.Information);
 
-                string csvRow = string.Format(Constants.Constants.LogContentsFormat,
+                string csvRow = string.Format(AppConstants.LogContentsFormat,
                                       timestamp,
-                                      Constants.Constants.LogTypeScreenCap,
+                                      AppConstants.LogTypeScreenCap,
                                       string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
                                       processName, processfileName,
                                       string.Empty,
@@ -236,15 +233,12 @@ namespace m_record.ViewModels
                                       screenFilePaths[i],
                                       string.Empty, string.Empty);
 
-                _loggingService.AppendLog(csvRow);
+                _inputLoggingService.AppendLog(csvRow);
             }
         }
 
-        // Private handlers for commands
-        private void OnNotificationAreaMouseEnter()
-        {
-            _notificationTimer.Stop();
-        }
+        // Private handlers for notification area commands
+        private void OnNotificationAreaMouseEnter() => _notificationTimer.Stop();
 
         private void OnNotificationAreaMouseLeave()
         {
@@ -255,10 +249,7 @@ namespace m_record.ViewModels
             }
         }
 
-        private void OnNotificationAreaGotFocus()
-        {
-            _notificationTimer.Stop();
-        }
+        private void OnNotificationAreaGotFocus() => _notificationTimer.Stop();
 
         private void OnNotificationAreaLostFocus()
         {
@@ -280,35 +271,6 @@ namespace m_record.ViewModels
             NotificationText += (string.IsNullOrEmpty(NotificationText) ? "" : "\n") + message;
             _notificationTimer.Stop();
             _notificationTimer.Start();
-        }
-
-        // Notification area mouse events for timer control
-        public void NotificationArea_MouseEnter()
-        {
-            _notificationTimer.Stop();
-        }
-
-        public void NotificationArea_MouseLeave()
-        {
-            if (NotificationAreaVisibility == Visibility.Visible)
-            {
-                _notificationTimer.Stop();
-                _notificationTimer.Start();
-            }
-        }
-
-        public void NotificationArea_GotFocus()
-        {
-            _notificationTimer.Stop();
-        }
-
-        public void NotificationArea_LostFocus()
-        {
-            if (NotificationAreaVisibility == Visibility.Visible)
-            {
-                _notificationTimer.Stop();
-                _notificationTimer.Start();
-            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? name = null)

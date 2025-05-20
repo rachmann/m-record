@@ -1,21 +1,17 @@
 using Gma.System.MouseKeyHook;
+using m_record.Constants;
 using m_record.Helpers;
 using System;
 using System.Windows.Forms;
 
 namespace m_record.Services
 {
-    public class InputHookService : IDisposable
+    // Primary Constructor for InputHookService
+    public class InputHookService(Action<string> onKeyLog, Action<string> onMouseLog) : IDisposable
     {
         private IKeyboardMouseEvents? _globalHook;
-        private readonly Action<string> _onKeyLog;
-        private readonly Action<string> _onMouseLog;
-
-        public InputHookService(Action<string> onKeyLog, Action<string> onMouseLog)
-        {
-            _onKeyLog = onKeyLog;
-            _onMouseLog = onMouseLog;
-        }
+        private readonly Action<string> _onKeyLog = onKeyLog;
+        private readonly Action<string> _onMouseLog = onMouseLog;
 
         public void Start()
         {
@@ -40,7 +36,7 @@ namespace m_record.Services
 
         private void GlobalHook_KeyDown(object? sender, KeyEventArgs e)
         {
-            string timestamp = DateTime.Now.ToString(Constants.Constants.LogTimestampFormat);
+            string timestamp = DateTime.Now.ToString(AppConstants.LogTimestampFormat);
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
 
             bool isCtrl = e.Control;
@@ -50,13 +46,13 @@ namespace m_record.Services
                 (Control.ModifierKeys & Keys.LWin) == Keys.LWin ||
                 (Control.ModifierKeys & Keys.RWin) == Keys.RWin;
 
-            string csvRow = string.Format(Constants.Constants.LogContentsFormat,
+            string csvRow = string.Format(AppConstants.LogContentsFormat,
                                 timestamp,
-                                Constants.Constants.LogTypeKeyBoard,
-                                isCtrl ? Constants.Constants.LogLetterTrue : Constants.Constants.LogLetterFalse,
-                                isAlt ? Constants.Constants.LogLetterTrue : Constants.Constants.LogLetterFalse,
-                                isShift ? Constants.Constants.LogLetterTrue : Constants.Constants.LogLetterFalse,
-                                isWin ? Constants.Constants.LogLetterTrue : Constants.Constants.LogLetterFalse,
+                                AppConstants.LogTypeKeyBoard,
+                                isCtrl ? AppConstants.LogLetterTrue : AppConstants.LogLetterFalse,
+                                isAlt ? AppConstants.LogLetterTrue : AppConstants.LogLetterFalse,
+                                isShift ? AppConstants.LogLetterTrue : AppConstants.LogLetterFalse,
+                                isWin ? AppConstants.LogLetterTrue : AppConstants.LogLetterFalse,
                                 e.KeyCode,
                                 processName, processfileName,
                                 string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
@@ -73,10 +69,10 @@ namespace m_record.Services
             var processName = MouseWindowHelper.GetProcessNameAtPoint(point);
             var processfileName = MouseWindowHelper.GetProcessFileNameAtPoint(point);
 
-            string timestamp = DateTime.Now.ToString(Constants.Constants.LogTimestampFormat);
-            string csvRow = string.Format(Constants.Constants.LogContentsFormat,
+            string timestamp = DateTime.Now.ToString(AppConstants.LogTimestampFormat);
+            string csvRow = string.Format(AppConstants.LogContentsFormat,
                                   timestamp,
-                                  Constants.Constants.LogTypeMouse,
+                                  AppConstants.LogTypeMouse,
                                   string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
                                   processName, processfileName,
                                   parentWindowTitle, windowTitle,

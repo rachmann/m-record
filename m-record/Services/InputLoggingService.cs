@@ -8,11 +8,11 @@ using m_record.Constants;
 
 namespace m_record.Services
 {
-    public class LoggingService
+    public class InputLoggingService
     {
         private string? _currentLogFilePath;
 
-        public string GetRecordPath()
+        public static string GetRecordPath()
         {
             var path = Properties.Settings.Default.RecordPath;
             if (string.IsNullOrWhiteSpace(path))
@@ -25,7 +25,7 @@ namespace m_record.Services
         public string GetCurrentLogFilePath()
         {
             var dir = GetRecordPath();
-            var fileName = string.Format(Constants.Constants.LogFileNameTemplate, DateTime.Now, DateTime.Now.DayOfYear);
+            var fileName = string.Format(AppConstants.LogFileNameTemplate, DateTime.Now, DateTime.Now.DayOfYear);
             var path = Path.Combine(dir, fileName);
 
             if (_currentLogFilePath != path)
@@ -33,7 +33,7 @@ namespace m_record.Services
                 _currentLogFilePath = path;
                 if (!File.Exists(path))
                 {
-                    File.WriteAllText(path, Constants.Constants.LogFileHeader + Environment.NewLine);
+                    File.WriteAllText(path, AppConstants.LogFileHeader + Environment.NewLine);
                 }
             }
             return path;

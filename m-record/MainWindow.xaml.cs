@@ -1,9 +1,13 @@
 ﻿using Gma.System.MouseKeyHook;
 using m_record.Constants;
+using m_record.Dialogs;
 using m_record.Enums;
 using m_record.Helpers;
 using m_record.Services;
 using m_record.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -35,9 +39,10 @@ namespace m_record
         public MainWindow()
         {
             InitializeComponent();
-            MainViewModel = new MainViewModel();
+            MainViewModel = App.Services.GetRequiredService<MainViewModel>();
             DataContext = MainViewModel;
             isDarkMode = Properties.Settings.Default.IsDarkMode;
+
             ApplyTheme();
 
             // Subscribe to ViewModel events
@@ -51,39 +56,7 @@ namespace m_record
         // Move dialog logic to private methods:
         private void OpenSettingsDialog()
         {
-            var notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
-            // Defensive: check if value is defined in the enum
-            if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
-                notifySetting = NotificationStyle.None;
-
-            var screenCaptureSetting = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
-            // Defensive: check if value is defined in the enum
-            if (!Enum.IsDefined(typeof(ScreenCaptureStyle), screenCaptureSetting))
-                screenCaptureSetting = ScreenCaptureStyle.None;
-
-            var recordingPath = Properties.Settings.Default.RecordPath ?? Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            if (string.IsNullOrWhiteSpace(recordingPath))
-            {
-                recordingPath = System.IO.Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                    Constants.Constants.AppName
-                );
-            }
-
-            if (!Directory.Exists(recordingPath))
-            {
-                try
-                {
-                    Directory.CreateDirectory(recordingPath);
-                }
-                catch (Exception ex)
-                {
-                    MainViewModel.ShowNotification($"{Constants.Constants.ErrorFailedToCreateDir} {ex.Message}", Constants.Constants.ErrorTitle, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            var dlg = new SettingsDialog(isDarkMode, recordingPath, notifySetting, screenCaptureSetting) { Owner = this };
+            var dlg = new SettingsDialog() { Owner = this };
             if (dlg.ShowDialog() == true)
             {
                 isDarkMode = dlg.IsDarkMode;
@@ -124,6 +97,10 @@ namespace m_record
 
             if (isDarkMode)
             {
+                // Clear any local Foreground value so the style can take effect
+                MenuIcon.ClearValue(ForegroundProperty);
+                CloseIcon.ClearValue(ForegroundProperty);
+
                 MenuIcon.Style = (Style)FindResource("MenuIconDarkModeStyle");
                 CloseIcon.Style = (Style)FindResource("CloseIconDarkModeStyle");
             }

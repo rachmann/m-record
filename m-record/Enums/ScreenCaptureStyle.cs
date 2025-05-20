@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace m_record.Enums
 {
-
     public enum ScreenCaptureStyle
     {
         [Description("None")]
