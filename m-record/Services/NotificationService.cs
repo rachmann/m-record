@@ -5,6 +5,9 @@ using System.Windows;
 
 namespace m_record.Services
 {
+    /// <summary>
+    /// Service for displaying notifications to the user.
+    /// </summary>
     public class NotificationService
     {
         private Action<string> _showInArea;

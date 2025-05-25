@@ -8,6 +8,9 @@ using System.Windows.Forms;
 
 namespace m_record.Services
 {
+    /// <summary>
+    /// Service for capturing screenshots of the screen(s).
+    /// </summary>
     public class ScreenCaptureService
     {
         public ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
