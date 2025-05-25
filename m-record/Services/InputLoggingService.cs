@@ -8,6 +8,9 @@ using m_record.Constants;
 
 namespace m_record.Services
 {
+    /// <summary>
+    /// Logging service for input data.
+    /// </summary>
     public class InputLoggingService
     {
         private string? _currentLogFilePath;

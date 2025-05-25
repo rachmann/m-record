@@ -6,6 +6,11 @@ using System.Windows.Forms;
 
 namespace m_record.Services
 {
+    /// <summary>
+    /// Service for capturing keyboard and mouse input.
+    /// </summary>
+    /// <param name="onKeyLog"></param>
+    /// <param name="onMouseLog"></param>
     // Primary Constructor for InputHookService
     public class InputHookService(Action<string> onKeyLog, Action<string> onMouseLog) : IDisposable
     {

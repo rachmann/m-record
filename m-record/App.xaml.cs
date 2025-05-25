@@ -1,4 +1,5 @@
-﻿using m_record.Services;
+﻿using m_record.Interfaces;
+using m_record.Services;
 using m_record.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -43,6 +44,7 @@ namespace m_record
                     // This will be replaced in MainViewModel after construction.
                     return new NotificationService(_ => { });
                 })
+                .AddSingleton<IDialogService, DialogService>()
                 .AddTransient<InputHookService>() // Usually transient due to event subscriptions
                 .AddTransient<MainViewModel>() // Register ViewModels
                 .BuildServiceProvider();
