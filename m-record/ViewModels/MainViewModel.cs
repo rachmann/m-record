@@ -33,7 +33,6 @@ namespace m_record.ViewModels
         private Brush _statusIconForeground = Brushes.Green;
         private object _playStopIconKind = MahApps.Metro.IconPacks.PackIconMaterialKind.RecordCircleOutline;
 
-
         private Brush _windowBackground = Brushes.Black;
         public Brush WindowBackground
         {
@@ -48,10 +47,6 @@ namespace m_record.ViewModels
             set { _contentBorderBackground = value; OnPropertyChanged(); }
         }
         
-        /////////////////////////////////////////////////
-        // context menu
-        //
-        // context menu
         private Style? _contextMenuButtonStyle;
         public Style? ContextMenuButtonStyle
         {
@@ -60,6 +55,7 @@ namespace m_record.ViewModels
                 _contextMenuButtonStyle = value;
                 OnPropertyChanged(); }
         }
+
         // context menu icon
         private Style? _contextMenuIconStyle;
         public Style? ContextMenuIconStyle
