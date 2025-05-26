@@ -402,6 +402,8 @@ namespace m_record.ViewModels
             _notificationTimer.Start();
         }
 
+
+
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
