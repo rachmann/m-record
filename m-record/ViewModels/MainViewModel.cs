@@ -21,8 +21,9 @@ namespace m_record.ViewModels
         private readonly ILogger<MainViewModel> _logger;
         private readonly IAppSettingsService _appSettingsService;
         private AppSettings Settings => _appSettingsService.Current;
+
         public event PropertyChangedEventHandler? PropertyChanged;
-        public event Action? RequestClose;
+
 
         private bool _isRecording;
         public bool CanCaptureScreens => IsRecording;
@@ -30,107 +31,33 @@ namespace m_record.ViewModels
         private bool _isDarkMode;
         private string _notificationText = string.Empty;
         private string _timerText = AppConstants.TimerInitialText;
-        private Brush _statusIconForeground = Brushes.Green;
         private object _playStopIconKind = MahApps.Metro.IconPacks.PackIconMaterialKind.RecordCircleOutline;
 
+        private Brush _statusIconForeground = Brushes.Green;
         private Brush _windowBackground = Brushes.Black;
-        public Brush WindowBackground
-        {
-            get => _windowBackground;
-            set { _windowBackground = value; OnPropertyChanged(); }
-        }
-
         private Brush _contentBorderBackground = Brushes.Black;
-        public Brush ContentBorderBackground
-        {
-            get => _contentBorderBackground;
-            set { _contentBorderBackground = value; OnPropertyChanged(); }
-        }
-        
-        private Style? _contextMenuButtonStyle;
-        public Style? ContextMenuButtonStyle
-        {
-            get => _contextMenuButtonStyle;
-            set {
-                _contextMenuButtonStyle = value;
-                OnPropertyChanged(); }
-        }
-
-        // context menu icon
-        private Style? _contextMenuIconStyle;
-        public Style? ContextMenuIconStyle
-        {
-            get => _contextMenuIconStyle;
-            set { _contextMenuIconStyle = value; OnPropertyChanged(); }
-        }
-
-        // context menu item
-        private Style? _contextMenuItemStyle;
-        public Style? ContextMenuItemStyle
-        {
-            get => _contextMenuItemStyle;
-            set { _contextMenuItemStyle = value; OnPropertyChanged(); }
-        }
-
-        // context menu icon style
-        private Style? _contextMenuItemIconStyle;
-        public Style? ContextMenuItemIconStyle
-        {
-            get => _contextMenuItemIconStyle;
-            set { _contextMenuItemIconStyle = value; OnPropertyChanged(); }
-        }
-
-        /////////////////////////////////////////////////
-        //close button
-        private Style? _closeButtonStyle;
-        public Style? CloseButtonStyle
-        {
-            get => _closeButtonStyle;
-            set { _closeButtonStyle = value; OnPropertyChanged(); }
-        }
-
-        // close button icon
-        private Style? _closeIconStyle;
-        public Style? CloseIconStyle
-        {
-            get => _closeIconStyle;
-            set { _closeIconStyle = value; OnPropertyChanged(); }
-        }
-
         private Brush _timerTextForeground = Brushes.Black;
-        public Brush TimerTextForeground
-        {
-            get => _timerTextForeground;
-            set { _timerTextForeground = value; OnPropertyChanged(); }
-        }
-
+        private Style? _contextMenuButtonStyle;
+        private Style? _contextMenuIconStyle;
+        private Style? _contextMenuItemStyle;
+        private Style? _contextMenuItemIconStyle;
+        private Style? _closeButtonStyle;
+        private Style? _closeIconStyle;
         private Style? _playStopButtonStyle;
-        public Style? PlayStopButtonStyle
-        {
-            get => _playStopButtonStyle;
-            set { _playStopButtonStyle = value; OnPropertyChanged(); }
-        }
-
         private Style? _statusIconButtonStyle;
-        public Style? StatusIconButtonStyle
-        {
-            get => _statusIconButtonStyle;
-            set { _statusIconButtonStyle = value; OnPropertyChanged(); }
-        }
-
         private readonly ScreenCaptureService _screenCaptureService;
         private readonly InputLoggingService _inputLoggingService;
         private readonly NotificationService _notificationService;
         private InputHookService? _inputHookService;
         private readonly IDialogService _dialogService;
-
-        // add error logging here with a logging framework
-
         private readonly DispatcherTimer _timer;
         private readonly DispatcherTimer _notificationTimer = new();
-
         private Visibility _notificationAreaVisibility = Visibility.Collapsed;
 
+
+
+
+        public event Action? RequestClose;
         public ICommand PlayStopCommand { get; }
         public ICommand CaptureScreensCommand { get; }
         public ICommand NotificationAreaMouseEnterCommand { get; }
@@ -215,6 +142,82 @@ namespace m_record.ViewModels
 
         }
 
+        public Brush TimerTextForeground
+        {
+            get => _timerTextForeground;
+            set { _timerTextForeground = value; OnPropertyChanged(); }
+        }
+
+        public Brush StatusIconForeground
+        {
+            get => _statusIconForeground;
+            set { _statusIconForeground = value; OnPropertyChanged(); }
+        }
+
+        public Brush ContentBorderBackground
+        {
+            get => _contentBorderBackground;
+            set { _contentBorderBackground = value; OnPropertyChanged(); }
+        }
+
+        public Brush WindowBackground
+        {
+            get => _windowBackground;
+            set { _windowBackground = value; OnPropertyChanged(); }
+        }
+
+        public Style? ContextMenuItemStyle
+        {
+            get => _contextMenuItemStyle;
+            set { _contextMenuItemStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? ContextMenuItemIconStyle
+        {
+            get => _contextMenuItemIconStyle;
+            set { _contextMenuItemIconStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? ContextMenuIconStyle
+        {
+            get => _contextMenuIconStyle;
+            set { _contextMenuIconStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? ContextMenuButtonStyle
+        {
+            get => _contextMenuButtonStyle;
+            set
+            {
+                _contextMenuButtonStyle = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public Style? PlayStopButtonStyle
+        {
+            get => _playStopButtonStyle;
+            set { _playStopButtonStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? StatusIconButtonStyle
+        {
+            get => _statusIconButtonStyle;
+            set { _statusIconButtonStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? CloseIconStyle
+        {
+            get => _closeIconStyle;
+            set { _closeIconStyle = value; OnPropertyChanged(); }
+        }
+
+        public Style? CloseButtonStyle
+        {
+            get => _closeButtonStyle;
+            set { _closeButtonStyle = value; OnPropertyChanged(); }
+        }
+
         public bool IsRecording
         {
             get => _isRecording;
@@ -225,6 +228,19 @@ namespace m_record.ViewModels
                     _isRecording = value;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(CanCaptureScreens));
+                }
+            }
+        }
+
+        public bool IsDarkMode
+        {
+            get => Settings.IsDarkMode;
+            set
+            {
+                if (Settings.IsDarkMode != value)
+                {
+                    _appSettingsService.Update(s => s.IsDarkMode = value);
+                    OnPropertyChanged();
                 }
             }
         }
@@ -249,10 +265,10 @@ namespace m_record.ViewModels
             set { _timerText = value; OnPropertyChanged(); }
         }
 
-        public Brush StatusIconForeground
+        public string NotificationText
         {
-            get => _statusIconForeground;
-            set { _statusIconForeground = value; OnPropertyChanged(); }
+            get => _notificationText;
+            set { _notificationText = value; OnPropertyChanged(); }
         }
 
         public object PlayStopIconKind
@@ -261,30 +277,12 @@ namespace m_record.ViewModels
             set { _playStopIconKind = value; OnPropertyChanged(); }
         }
 
-        public string NotificationText
-        {
-            get => _notificationText;
-            set { _notificationText = value; OnPropertyChanged(); }
-        }
-
         public Visibility NotificationAreaVisibility
         {
             get => _notificationAreaVisibility;
             set { _notificationAreaVisibility = value; OnPropertyChanged(); }
         }
 
-        public bool IsDarkMode
-        {
-            get => Settings.IsDarkMode;
-            set
-            {
-                if (Settings.IsDarkMode != value)
-                {
-                    _appSettingsService.Update(s => s.IsDarkMode = value);
-                    OnPropertyChanged();
-                }
-            }
-        }
 
         private void ToggleRecording()
         {
@@ -401,8 +399,6 @@ namespace m_record.ViewModels
             _notificationTimer.Stop();
             _notificationTimer.Start();
         }
-
-
 
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
