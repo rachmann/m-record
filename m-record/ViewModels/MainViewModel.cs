@@ -2,6 +2,7 @@ using m_record.Constants;
 using m_record.Enums;
 using m_record.Helpers;
 using m_record.Interfaces;
+using m_record.Models;
 using m_record.Services;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
@@ -18,7 +19,8 @@ namespace m_record.ViewModels
     public class MainViewModel : INotifyPropertyChanged
     {
         private readonly ILogger<MainViewModel> _logger;
-
+        private readonly IAppSettingsService _appSettingsService;
+        private AppSettings Settings => _appSettingsService.Current;
         public event PropertyChangedEventHandler? PropertyChanged;
         public event Action? RequestClose;
 
@@ -149,12 +151,15 @@ namespace m_record.ViewModels
             IDialogService dialogService,
             ScreenCaptureService screenCaptureService,
             InputLoggingService loggingService,
-            NotificationService notificationService)
+            NotificationService notificationService,
+            IAppSettingsService appSettingsService
+             )
         {
             _logger = logger;
             _dialogService = dialogService;
             _screenCaptureService = screenCaptureService;
             _inputLoggingService = loggingService;
+            _appSettingsService = appSettingsService ?? throw new ArgumentNullException(nameof(appSettingsService));
 
             _notificationService = notificationService;
             _notificationService.SetActionDelegates(AppendNotificationText);
@@ -170,25 +175,17 @@ namespace m_record.ViewModels
             NotificationAreaMouseLeaveCommand = new RelayCommand(_ => OnNotificationAreaMouseLeave());
             NotificationAreaGotFocusCommand = new RelayCommand(_ => OnNotificationAreaGotFocus());
             NotificationAreaLostFocusCommand = new RelayCommand(_ => OnNotificationAreaLostFocus());
-          
+            OpenSettingsCommand = new RelayCommand(_ => _dialogService.ShowSettingsDialog());
+            OpenHelpCommand = new RelayCommand(_ => _dialogService.ShowHelpDialog());
+            OpenAboutCommand = new RelayCommand(_ => _dialogService.ShowAboutDialog());
             OpenSettingsCommand = new RelayCommand(_ =>
             {
                 var result = _dialogService.ShowSettingsDialog();
                 if (result != null && (bool)result == true)
                 {
-                    _isDarkMode = _dialogService.SettingsDialog?.IsDarkMode ?? false;
-                    Properties.Settings.Default.IsDarkMode = _isDarkMode;
-                    Properties.Settings.Default.NotifyStyle = (int)(_dialogService.SettingsDialog?.SelectedNotificationStyle ?? NotificationStyle.None);
-                    Properties.Settings.Default.RecordPath = _dialogService.SettingsDialog?.SelectedRecordingPath ?? string.Empty;
-                    Properties.Settings.Default.ScreenCaptureStyle = (int)(_dialogService.SettingsDialog?.SelectedScreenCaptureStyle ?? ScreenCaptureStyle.None);
-                    Properties.Settings.Default.Save();
-
                     ApplyTheme();
                 }
             });
-            OpenHelpCommand = new RelayCommand(_ => _dialogService.ShowHelpDialog());
-            OpenAboutCommand = new RelayCommand(_ => _dialogService.ShowAboutDialog());
-
             _notificationTimer.Interval = TimeSpan.FromSeconds(4);
             _notificationTimer.Tick += (s, e) =>
             {
@@ -196,7 +193,7 @@ namespace m_record.ViewModels
                 _notificationTimer.Stop();
             };
 
-            _isDarkMode = Properties.Settings.Default.IsDarkMode;
+            _isDarkMode = Settings.IsDarkMode;
 
             ApplyTheme();
 
@@ -221,72 +218,6 @@ namespace m_record.ViewModels
             StatusIconButtonStyle = IsDarkMode ? (Style?)app.TryFindResource("DarkModeActionButtonStyle") : null;
 
         }
-
-
-        //private void ApplyTheme2()
-        //{
-        //    // Window and border
-        //    this.Background = isDarkMode ? Brushes.Black : Brushes.White;
-        //    if (this.Content is Border border)
-        //    {
-        //        border.Background = isDarkMode ? Brushes.Black : Brushes.White;
-        //        border.BorderBrush = isDarkMode ? Brushes.Gray : new SolidColorBrush(Color.FromRgb(136, 136, 136));
-        //    }
-        //    // Menu items:
-        //    // Menu and Close icons
-        //    ContextMenuButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
-        //    CloseButton.Style = isDarkMode ? (Style)FindResource("DarkModeTopButtonStyle") : null;
-
-        //    if (isDarkMode)
-        //    {
-        //        // Clear any local Foreground value so the style can take effect
-        //        MenuIcon.ClearValue(ForegroundProperty);
-        //        CloseIcon.ClearValue(ForegroundProperty);
-
-        //        MenuIcon.Style = (Style)FindResource("ContextMenuIconDarkModeStyle");
-        //        CloseIcon.Style = (Style)FindResource("CloseIconDarkModeStyle");
-        //    }
-        //    else
-        //    {
-        //        MenuIcon.Style = null;
-        //        MenuIcon.Foreground = Brushes.Black;
-        //        CloseIcon.Style = null;
-        //        CloseIcon.Foreground = Brushes.Black;
-        //    }
-
-        //    // Context menu background, text, and icon colors
-        //    if (ContextMenuButton.ContextMenu is ContextMenu menu)
-        //    {
-        //        menu.Background = isDarkMode ? Brushes.Black : Brushes.White;
-        //        menu.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-        //        foreach (var item in menu.Items)
-        //        {
-        //            if (item is MenuItem mi)
-        //            {
-        //                mi.Background = isDarkMode ? Brushes.Black : Brushes.White;
-        //                mi.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-        //                mi.Style = isDarkMode ? (Style)FindResource("DarkModeMenuItemStyle") : null;
-
-        //                // Set icon foreground for each menu item
-        //                if (mi.Icon is MahApps.Metro.IconPacks.PackIconMaterial icon)
-        //                {
-        //                    icon.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-        //                }
-        //            }
-        //        }
-        //    }
-
-        //    // Main text
-        //    TimerText.Foreground = isDarkMode ? Brushes.White : Brushes.Black;
-
-        //    // Play/Stop icon
-        //    PlayStopButton.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
-        //    // Play/Stop style
-        //    PlayStopButton.Style = isDarkMode ? (Style)FindResource("DarkModePlayStopButtonStyle") : null;
-        //    // Status icon: keep red/green, but set background if needed
-        //    StatusIcon.Background = isDarkMode ? Brushes.Black : Brushes.Transparent;
-
-        //}
 
         public bool IsRecording
         {
@@ -348,19 +279,16 @@ namespace m_record.ViewModels
 
         public bool IsDarkMode
         {
-            get => _isDarkMode;
+            get => Settings.IsDarkMode;
             set
             {
-                if (_isDarkMode != value)
+                if (Settings.IsDarkMode != value)
                 {
-                    _isDarkMode = value;
-                    Properties.Settings.Default.IsDarkMode = _isDarkMode;
-                    Properties.Settings.Default.Save();
+                    _appSettingsService.Update(s => s.IsDarkMode = value);
                     OnPropertyChanged();
                 }
             }
         }
-
 
         private void ToggleRecording()
         {
@@ -410,9 +338,9 @@ namespace m_record.ViewModels
             var nowDate = DateTime.Now;
             string timestamp = nowDate.ToString(AppConstants.LogTimestampFormat);
             var (processName, processfileName) = ForegroundAppHelper.GetForegroundAppInfo();
-            string directory = InputLoggingService.GetRecordPath();
+            string directory = _inputLoggingService.GetRecordPath();
 
-            var screenFilePaths = ScreenCaptureService.CaptureAllScreens(nowDate, directory);
+            var screenFilePaths = _screenCaptureService.CaptureAllScreens(nowDate, directory);
 
             if (screenFilePaths == null || screenFilePaths.Count == 0)
             {

@@ -1,8 +1,11 @@
 ﻿using m_record.Interfaces;
+using m_record.Models;
 using m_record.Services;
 using m_record.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Serilog;
 using System;
 using System.Configuration;
@@ -30,24 +33,29 @@ namespace m_record
                 .CreateLogger();
 
             Services = new ServiceCollection()
+                .Configure<AppSettings>(options =>
+                {
+                    // Optionally, load from Settings or a config file
+                    options.IsDarkMode = m_record.Properties.Settings.Default.IsDarkMode;
+                    options.NotifyStyle = m_record.Properties.Settings.Default.NotifyStyle;
+                    options.ScreenCaptureStyle = m_record.Properties.Settings.Default.ScreenCaptureStyle;
+                    options.RecordPath = m_record.Properties.Settings.Default.RecordPath ?? string.Empty;
+                })
                 .AddLogging(builder =>
                 {
                     builder.ClearProviders(); // Remove default providers
                     builder.AddSerilog();     // Add Serilog as the logging provider
                     builder.AddConsole();     // Log to console (optional)
                 })
+                .AddSingleton<IAppSettingsService, AppSettingsService>()
                 .AddSingleton<ScreenCaptureService>() // Register services as singletons or transients as needed
                 .AddSingleton<InputLoggingService>()
-                .AddSingleton<NotificationService>(sp =>
-                {
-                    // Provide a default no-op action or a placeholder.
-                    // This will be replaced in MainViewModel after construction.
-                    return new NotificationService(_ => { });
-                })
+                .AddSingleton<NotificationService>()
                 .AddSingleton<IDialogService, DialogService>()
                 .AddTransient<InputHookService>() // Usually transient due to event subscriptions
                 .AddTransient<MainViewModel>() // Register ViewModels
                 .BuildServiceProvider();
+
 
             base.OnStartup(e);
         }

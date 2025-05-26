@@ -2,6 +2,9 @@ using m_record.Enums;
 using m_record.Constants;
 using System;
 using System.Windows;
+using m_record.Interfaces;
+using m_record.Models;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace m_record.Services
 {
@@ -11,18 +14,17 @@ namespace m_record.Services
     public class NotificationService
     {
         private Action<string> _showInArea;
-
+        private readonly IAppSettingsService _appSettingsService;
+        private AppSettings Settings => _appSettingsService.Current;
         public NotificationService()
         {
+            _appSettingsService = App.Services.GetRequiredService<IAppSettingsService>();
+
             // to default to a no-op
             _showInArea = message => { };
            
         }
-        public NotificationService(Action<string> showInArea)
-        {
-            _showInArea = showInArea;
-        }
-
+     
         public void SetActionDelegates(Action<string> showInArea)
         {
             _showInArea = showInArea;
@@ -41,7 +43,7 @@ namespace m_record.Services
 
             try
             {
-                notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
+                notifySetting = (NotificationStyle)Settings.NotifyStyle;
                 if (!Enum.IsDefined(typeof(NotificationStyle), notifySetting))
                     notifySetting = NotificationStyle.None;
             }

@@ -1,6 +1,10 @@
 using m_record.Constants;
 using m_record.Enums;
+using m_record.Interfaces;
+using m_record.Models;
+using m_record.Properties;
 using m_record.Services;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Drawing;
 using System.IO;
@@ -13,11 +17,23 @@ namespace m_record.Services
     /// </summary>
     public class ScreenCaptureService
     {
-        public ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
+        public ScreenCaptureStyle screenCaptureStyle;
+        private readonly IAppSettingsService _appSettingsService;
+        private AppSettings Settings => _appSettingsService.Current;
 
-        public static List<string> CaptureAllScreens(DateTime dateNow, string directory)
+        public ScreenCaptureService()
         {
-            ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
+            _appSettingsService = App.Services.GetRequiredService<IAppSettingsService>();
+            if (_appSettingsService == null)
+            {
+                throw new InvalidOperationException("AppSettingsService not found in service provider.");
+            }
+            screenCaptureStyle = (ScreenCaptureStyle)Settings.ScreenCaptureStyle;
+        }
+
+        public List<string> CaptureAllScreens(DateTime dateNow, string directory)
+        {
+            ScreenCaptureStyle screenCaptureStyle = (ScreenCaptureStyle)Settings.ScreenCaptureStyle;
             if (screenCaptureStyle == ScreenCaptureStyle.None)
             {
                 return new List<string>();

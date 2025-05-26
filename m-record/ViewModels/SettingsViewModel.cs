@@ -1,6 +1,9 @@
 ﻿using m_record.Constants;
 using m_record.Enums;
 using m_record.Extensions;
+using m_record.Interfaces;
+using m_record.Models;
+using m_record.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
@@ -16,17 +19,19 @@ namespace m_record.ViewModels
     {
         private readonly ILogger<SettingsViewModel>? _logger;
         public event PropertyChangedEventHandler? PropertyChanged;
-
-        private bool _isDarkMode;
-        private string _selectedRecordingPath = string.Empty;
-        private NotificationStyle _selectedNotificationStyle;
-        private ScreenCaptureStyle _selectedScreenCaptureStyle;
+        private readonly IAppSettingsService _appSettingsService;
+        private AppSettings Settings => _appSettingsService.Current;
 
         public ObservableCollection<KeyValuePair<Enum, string>> ScreenCaptureOptions { get; }
         public ObservableCollection<KeyValuePair<Enum, string>> NotifyOptions { get; }
 
         public SettingsViewModel()
         {
+            _appSettingsService = App.Services.GetRequiredService<IAppSettingsService>();
+            if (_appSettingsService == null)
+            {
+                throw new InvalidOperationException("AppSettingsService not found in service provider.");
+            }
             _logger = App.Services.GetService<ILogger<SettingsViewModel>>();
             if (_logger == null)
             {
@@ -36,11 +41,11 @@ namespace m_record.ViewModels
             NotifyOptions = new ObservableCollection<KeyValuePair<Enum, string>>(EnumExtensions.GetEnumDescriptions<NotificationStyle>());
 
 
-            // Read from Properties.Settings.Default
-            var notifySetting = (NotificationStyle)Properties.Settings.Default.NotifyStyle;
+            // Read from Settings
+            var notifySetting = (NotificationStyle)Settings.NotifyStyle;
             if (!Enum.IsDefined(notifySetting))
             {
-                _logger.LogError($"{AppConstants.ErrorNotificationStyleInvalid} {Properties.Settings.Default.NotifyStyle}");
+                _logger.LogError($"{AppConstants.ErrorNotificationStyleInvalid} {Settings.NotifyStyle}");
                 notifySetting = NotificationStyle.None;
             }
 
@@ -49,10 +54,10 @@ namespace m_record.ViewModels
                 _logger.LogInformation(AppConstants.InfoNotificationStyleSetToNone);
             }
 
-            var screenCaptureSetting = (ScreenCaptureStyle)Properties.Settings.Default.ScreenCaptureStyle;
+            var screenCaptureSetting = (ScreenCaptureStyle)Settings.ScreenCaptureStyle;
             if (!Enum.IsDefined(screenCaptureSetting))
             {
-                _logger.LogError($"{AppConstants.ErrorNotificationStyleInvalid} {Properties.Settings.Default.ScreenCaptureStyle}");
+                _logger.LogError($"{AppConstants.ErrorNotificationStyleInvalid} {Settings.ScreenCaptureStyle}");
                 screenCaptureSetting = ScreenCaptureStyle.None;
             }
 
@@ -61,7 +66,7 @@ namespace m_record.ViewModels
                 _logger.LogInformation(AppConstants.InfoScreenCapStyleSetToNone);
             }
 
-            var recordingPath = Properties.Settings.Default.RecordPath ??
+            var recordingPath = Settings.RecordPath ??
                 System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                     AppConstants.AppName
@@ -95,7 +100,7 @@ namespace m_record.ViewModels
                 }
             }
 
-            IsDarkMode = Properties.Settings.Default.IsDarkMode;
+          
             SelectedNotificationStyle = notifySetting;
             SelectedRecordingPath = recordingPath;
             SelectedScreenCaptureStyle = screenCaptureSetting;
@@ -103,12 +108,12 @@ namespace m_record.ViewModels
 
         public bool IsDarkMode
         {
-            get => _isDarkMode;
+            get => Settings.IsDarkMode;
             set
             {
-                if (_isDarkMode != value)
+                if (Settings.IsDarkMode != value)
                 {
-                    _isDarkMode = value;
+                    _appSettingsService.Update(s => s.IsDarkMode = value);
                     OnPropertyChanged();
                 }
             }
@@ -116,12 +121,12 @@ namespace m_record.ViewModels
 
         public string SelectedRecordingPath
         {
-            get => _selectedRecordingPath;
+            get => Settings.RecordPath;
             set
             {
-                if (_selectedRecordingPath != value)
+                if (Settings.RecordPath != value)
                 {
-                    _selectedRecordingPath = value;
+                    _appSettingsService.Update(s => s.RecordPath = value);
                     OnPropertyChanged();
                 }
             }
@@ -129,12 +134,12 @@ namespace m_record.ViewModels
 
         public NotificationStyle SelectedNotificationStyle
         {
-            get => _selectedNotificationStyle;
+            get => (NotificationStyle)Settings.NotifyStyle;
             set
             {
-                if (_selectedNotificationStyle != value)
+                if ((NotificationStyle)Settings.NotifyStyle != value)
                 {
-                    _selectedNotificationStyle = value;
+                    _appSettingsService.Update(s => s.NotifyStyle = (int)value);
                     OnPropertyChanged();
                 }
             }
@@ -142,12 +147,12 @@ namespace m_record.ViewModels
 
         public ScreenCaptureStyle SelectedScreenCaptureStyle
         {
-            get => _selectedScreenCaptureStyle;
+            get => (ScreenCaptureStyle)Settings.ScreenCaptureStyle;
             set
             {
-                if (_selectedScreenCaptureStyle != value)
+                if ((ScreenCaptureStyle)Settings.ScreenCaptureStyle != value)
                 {
-                    _selectedScreenCaptureStyle = value;
+                    _appSettingsService.Update(s => s.ScreenCaptureStyle = (int)value);
                     OnPropertyChanged();
                 }
             }

@@ -5,6 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using m_record.Constants;
+using m_record.Interfaces;
+using m_record.Models;
+using m_record.Properties;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace m_record.Services
 {
@@ -14,10 +18,21 @@ namespace m_record.Services
     public class InputLoggingService
     {
         private string? _currentLogFilePath;
-
-        public static string GetRecordPath()
+        private readonly IAppSettingsService _appSettingsService;
+        private AppSettings Settings => _appSettingsService.Current;
+        public InputLoggingService()
         {
-            var path = Properties.Settings.Default.RecordPath;
+            _appSettingsService =App.Services.GetRequiredService<IAppSettingsService>();
+            if (_appSettingsService == null)
+            {
+                throw new InvalidOperationException("AppSettingsService not found in service provider.");
+            }
+            _currentLogFilePath = Settings.RecordPath;
+        }
+
+        public string GetRecordPath()
+        {
+            var path = Settings.RecordPath;
             if (string.IsNullOrWhiteSpace(path))
                 path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (!Directory.Exists(path))
@@ -27,7 +42,7 @@ namespace m_record.Services
 
         public string GetCurrentLogFilePath()
         {
-            var dir = GetRecordPath();
+            var dir = Settings.RecordPath;
             var fileName = string.Format(AppConstants.LogFileNameTemplate, DateTime.Now, DateTime.Now.DayOfYear);
             var path = Path.Combine(dir, fileName);
 
