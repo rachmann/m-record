@@ -15,5 +15,7 @@ namespace m_record.Enums
         PrimaryScreen = 1,
         [Description("All Screens")]
         AllScreens = 2,
+        [Description("Current Screen")]
+        CurrentScreen = 3,
     }
 }
