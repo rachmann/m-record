@@ -4,10 +4,13 @@ using m_record.Interfaces;
 using m_record.Models;
 using m_record.Properties;
 using m_record.Services;
+using m_record.Interop;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Windows;
 using System.Windows.Forms;
 
 namespace m_record.Services
@@ -20,6 +23,12 @@ namespace m_record.Services
         public ScreenCaptureStyle screenCaptureStyle;
         private readonly IAppSettingsService _appSettingsService;
         private AppSettings Settings => _appSettingsService.Current;
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
         public ScreenCaptureService()
         {
@@ -50,6 +59,15 @@ namespace m_record.Services
             {
                 screens[0] = Screen.PrimaryScreen;
             }
+            else if (screenCaptureStyle == ScreenCaptureStyle.CurrentScreen)
+            {
+                IntPtr foregroundWindow = GetForegroundWindow();
+                if (foregroundWindow != IntPtr.Zero)
+                {
+                    Screen activeScreen = Screen.FromHandle(foregroundWindow);
+                    screens[0] = activeScreen;
+                }
+            }
 
             var filePaths = new List<string>();
             for (int i = 0; i < screens.Length; i++)
@@ -63,7 +81,7 @@ namespace m_record.Services
                 using var bmp = new Bitmap(bounds.Width, bounds.Height);
                 using (var g = Graphics.FromImage(bmp))
                 {
-                    g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
+                    g.CopyFromScreen(bounds.Location, System.Drawing.Point.Empty, bounds.Size);
                 }
                 // The service will save the file and return the path
                 string fileName = $"{AppConstants.ScreenCaptureFilePrefix}_{dateNow:yyyy}_{dateNow.DayOfYear:D3}_{i + 1}{AppConstants.ScreenCaptureFileSuffix}";
