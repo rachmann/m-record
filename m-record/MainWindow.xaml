@@ -13,130 +13,143 @@
         Icon="appicon.ico">
     <Border BorderBrush="#888" BorderThickness="1" CornerRadius="8" Background="{Binding ContentBorderBackground}">
         <Grid>
-            <!-- Top bar with context menu and close button -->
+            <!-- Top bar with draggable area, context menu button, and close button -->
             <Grid Height="32" VerticalAlignment="Top">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="32"/>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition Width="32"/> <!-- ContextMenuButton -->
+                    <ColumnDefinition/>           <!-- Draggable Area -->
+                    <ColumnDefinition Width="32"/> <!-- CloseButton -->
                 </Grid.ColumnDefinitions>
-                <!-- Context menu button & icon -->
+
+                <!-- Context menu button -->
                 <Button Grid.Column="0" Name="ContextMenuButton" Padding="0" Margin="0"
-                    Width="16" Height="16" BorderThickness="0"
-                    HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Style="{Binding ContextMenuButtonStyle}">
+                        Width="16" Height="16" BorderThickness="0"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        Style="{Binding ContextMenuButtonStyle}">
                     <iconPacks:PackIconMaterial x:Name="ContextMenuIcon"
-                                Kind="Menu" Width="14" Height="14"
-                                Style="{Binding ContextMenuIconStyle}" />
+                                                Kind="Menu" Width="14" Height="14"
+                                                Style="{Binding ContextMenuIconStyle}" />
                     <Button.ContextMenu>
                         <ContextMenu>
                             <MenuItem Header="Settings"
-                                Style="{Binding ContextMenuItemStyle}"
-                                Command="{Binding OpenSettingsCommand}">
+                                      Style="{Binding ContextMenuItemStyle}"
+                                      Command="{Binding OpenSettingsCommand}">
                                 <MenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="Cog" Width="16" Height="16"
-                                    Style="{Binding ContextMenuItemIconStyle}" />
+                                                                Style="{Binding ContextMenuItemIconStyle}" />
                                 </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="Help"
-                                Style="{Binding ContextMenuItemStyle}"
-                                Command="{Binding OpenHelpCommand}">
+                                      Style="{Binding ContextMenuItemStyle}"
+                                      Command="{Binding OpenHelpCommand}">
                                 <MenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="HelpCircleOutline" Width="16" Height="16"
-                                    Style="{Binding ContextMenuItemIconStyle}" />
+                                                                Style="{Binding ContextMenuItemIconStyle}" />
                                 </MenuItem.Icon>
                             </MenuItem>
                             <MenuItem Header="About"
-                                Style="{Binding ContextMenuItemStyle}"
-                                Command="{Binding OpenAboutCommand}">
+                                      Style="{Binding ContextMenuItemStyle}"
+                                      Command="{Binding OpenAboutCommand}">
                                 <MenuItem.Icon>
                                     <iconPacks:PackIconMaterial Kind="InformationOutline" Width="16" Height="16"
-                                    Style="{Binding ContextMenuItemIconStyle}" />
+                                                                Style="{Binding ContextMenuItemIconStyle}" />
                                 </MenuItem.Icon>
                             </MenuItem>
                         </ContextMenu>
                     </Button.ContextMenu>
-
                 </Button>
+
+                <!-- Draggable area -->
+                <Border Grid.Column="1" Background="Transparent">
+                    <i:Interaction.Triggers>
+                        <i:EventTrigger EventName="MouseDown">
+                            <i:InvokeCommandAction Command="{Binding DragWindowCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" />
+                        </i:EventTrigger>
+                    </i:Interaction.Triggers>
+                </Border>
+
+                <!-- Close button -->
                 <Button Grid.Column="2" Name="CloseButton" Padding="0" Margin="0"
-                    Width="16" Height="16" BorderThickness="0"
-                    HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Command="{Binding CloseCommand}"
-                    Style="{Binding CloseButtonStyle}">
+                        Width="16" Height="16" BorderThickness="0"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Command="{Binding CloseCommand}"
+                        Style="{Binding CloseButtonStyle}">
                     <iconPacks:PackIconMaterial x:Name="CloseIcon"
-                                Kind="Close"
-                                Width="14" Height="14"
-                                Style="{Binding CloseIconStyle}" />
+                                                Kind="Close"
+                                                Width="14" Height="14"
+                                                Style="{Binding CloseIconStyle}" />
                 </Button>
             </Grid>
 
             <!-- Main content -->
-            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,35,0,0">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                    <!-- Status Icon: Green or Red Circle -->
-                    <Button x:Name="StatusIconButton"
-                        Width="40" Height="40"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Margin="0,0,5,0"
-                        Command="{Binding CaptureScreensCommand}"
-                        Style="{Binding PlayStopButtonStyle}">
-                        <iconPacks:PackIconMaterial x:Name="StatusIcon"
-                                Kind="CheckboxBlankCircle"
-                                Width="38" Height="38"
-                                Margin="0,0,0,0"
-                                />
-                    </Button>
-                    <!-- Play/Stop Button -->
-                    <Button Name="PlayStopButton" 
-                            Width="40" Height="40" 
-                            Background="Transparent" 
+            <Grid Margin="0,32,0,0">
+                <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,35,0,0">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                        <!-- Status Icon: Green or Red Circle -->
+                        <Button x:Name="StatusIconButton"
+                            Width="40" Height="40"
+                            Background="Transparent"
                             BorderThickness="0"
-                            Command="{Binding PlayStopCommand}"
+                            Margin="0,0,5,0"
+                            Command="{Binding CaptureScreensCommand}"
                             Style="{Binding PlayStopButtonStyle}">
-                        <iconPacks:PackIconMaterial
-                                Kind="{Binding PlayStopIconKind}"
-                                Width="38" Height="38"
-                                Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                    </Button>
+                            <iconPacks:PackIconMaterial x:Name="StatusIcon"
+                                    Kind="CheckboxBlankCircle"
+                                    Width="38" Height="38"
+                                    Margin="0,0,0,0"
+                                    />
+                        </Button>
+                        <!-- Play/Stop Button -->
+                        <Button Name="PlayStopButton" 
+                                Width="40" Height="40" 
+                                Background="Transparent" 
+                                BorderThickness="0"
+                                Command="{Binding PlayStopCommand}"
+                                Style="{Binding PlayStopButtonStyle}">
+                            <iconPacks:PackIconMaterial
+                                    Kind="{Binding PlayStopIconKind}"
+                                    Width="38" Height="38"
+                                    Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                        </Button>
+                    </StackPanel>
+                    <!-- Timer -->
+                    <TextBlock Name="TimerText"
+                       Text="{Binding TimerText, Mode=OneWay}"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,10,0,0"
+                       Foreground="{Binding TimerTextForeground}" />
                 </StackPanel>
-                <!-- Timer -->
-                <TextBlock Name="TimerText"
-                   Text="{Binding TimerText, Mode=OneWay}"
-                   FontSize="20"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   Margin="0,10,0,0"
-                   Foreground="{Binding TimerTextForeground}" />
-            </StackPanel>
-            <DockPanel LastChildFill="True" VerticalAlignment="Bottom" Height="60" Margin="8,0,8,8">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <TextBox x:Name="NotificationArea"
-                        FontSize="10"
-                        TextWrapping="NoWrap"
-                        AcceptsReturn="True"
-                        IsReadOnly="True"
-                        HorizontalScrollBarVisibility="Auto"
-                        VerticalScrollBarVisibility="Auto"
-                        Visibility="{Binding NotificationAreaVisibility, Mode=OneWay}"
-                        Text="{Binding NotificationText, Mode=OneWay}">
-                        <i:Interaction.Triggers>
-                            <i:EventTrigger EventName="MouseEnter">
-                                <i:InvokeCommandAction Command="{Binding NotificationAreaMouseEnterCommand}" />
-                            </i:EventTrigger>
-                            <i:EventTrigger EventName="MouseLeave">
-                                <i:InvokeCommandAction Command="{Binding NotificationAreaMouseLeaveCommand}" />
-                            </i:EventTrigger>
-                            <i:EventTrigger EventName="GotFocus">
-                                <i:InvokeCommandAction Command="{Binding NotificationAreaGotFocusCommand}" />
-                            </i:EventTrigger>
-                            <i:EventTrigger EventName="LostFocus">
-                                <i:InvokeCommandAction Command="{Binding NotificationAreaLostFocusCommand}" />
-                            </i:EventTrigger>
-                        </i:Interaction.Triggers>
-                    </TextBox>
-                </ScrollViewer>
-            </DockPanel>
+                <DockPanel LastChildFill="True" VerticalAlignment="Bottom" Height="60" Margin="8,0,8,8">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <TextBox x:Name="NotificationArea"
+                            FontSize="10"
+                            TextWrapping="NoWrap"
+                            AcceptsReturn="True"
+                            IsReadOnly="True"
+                            HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto"
+                            Visibility="{Binding NotificationAreaVisibility, Mode=OneWay}"
+                            Text="{Binding NotificationText, Mode=OneWay}">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="MouseEnter">
+                                    <i:InvokeCommandAction Command="{Binding NotificationAreaMouseEnterCommand}" />
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="MouseLeave">
+                                    <i:InvokeCommandAction Command="{Binding NotificationAreaMouseLeaveCommand}" />
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="GotFocus">
+                                    <i:InvokeCommandAction Command="{Binding NotificationAreaGotFocusCommand}" />
+                                </i:EventTrigger>
+                                <i:EventTrigger EventName="LostFocus">
+                                    <i:InvokeCommandAction Command="{Binding NotificationAreaLostFocusCommand}" />
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </TextBox>
+                    </ScrollViewer>
+                </DockPanel>
+            </Grid>
         </Grid>
     </Border>
 </Window>

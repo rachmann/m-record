@@ -68,6 +68,7 @@ namespace m_record.ViewModels
         public ICommand OpenSettingsCommand { get; }
         public ICommand OpenHelpCommand { get; }
         public ICommand OpenAboutCommand { get; }
+        public ICommand DragWindowCommand { get; }
 
         public MainViewModel(
             ILogger<MainViewModel> logger,
@@ -101,6 +102,7 @@ namespace m_record.ViewModels
             OpenSettingsCommand = new RelayCommand(_ => _dialogService.ShowSettingsDialog());
             OpenHelpCommand = new RelayCommand(_ => _dialogService.ShowHelpDialog());
             OpenAboutCommand = new RelayCommand(_ => _dialogService.ShowAboutDialog());
+            DragWindowCommand = new RelayCommand(param => DragWindow(param));
             OpenSettingsCommand = new RelayCommand(_ =>
             {
                 var result = _dialogService.ShowSettingsDialog();
@@ -398,6 +400,21 @@ namespace m_record.ViewModels
             NotificationText += (string.IsNullOrEmpty(NotificationText) ? "" : "\n") + message;
             _notificationTimer.Stop();
             _notificationTimer.Start();
+        }
+
+        private void DragWindow(object? parameter)
+        {
+            if (parameter is Window window)
+            {
+                try
+                {
+                    window.DragMove();
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogError(ex, "Failed to drag the window.");
+                }
+            }
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? name = null)
